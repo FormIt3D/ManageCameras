@@ -13,7 +13,7 @@
         FormItInterface.Initialize(function () {
 
             // subscribe to the message sent when a camera operation ends
-            FormItInterface.SubscribeMessage("FormIt.Message.kCameraOperationEnded", function(msg)
+            FormItInterface.SubscribeMessage("FormIt.Message.kCameraChanged", function(msg)
             {
                 var jsonMessage = JSON.parse(msg);
 

@@ -1,0 +1,8 @@
+{
+    "PluginName": "Manage Cameras",
+    "PluginDescription": "Provides a variety of operations related to Cameras, including modifying the current Camera and generating Cameras from Scenes.",
+    "PluginType": "Panel",
+    "Scripts": []
+    ,"Panel": "PLUGINLOCATION/index.html",
+    "PanelIcon": "PLUGINLOCATION/img/manage_cameras@2x.png"
+}

@@ -1,0 +1,49 @@
+<html>
+<head>
+    <!-- for testing shared files locally, use: ../../FormItExamplePlugins/SharedPluginFiles -->
+    <title>Match Photo</title>
+    <META NAME="Title" CONTENT="Manage Cameras">
+    <META NAME="Author" CONTENT="Autodesk FormIt">
+    <!-- interface with FormIt -->
+    <script type="text/javascript" src="https://formit3d.github.io/SharedPluginUtilities/v23_0/FormItInterface.js"></script>
+    <!-- utilities -->
+    <script type="text/javascript" src="https://formit3d.github.io/FormItWorkflowPlugins/Utils.js"></script>
+    <!-- UI and styling -->
+    <script type="text/javascript" src="https://formit3d.github.io/SharedPluginUtilities/FormItPluginUI.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://formit3d.github.io/SharedPluginUtilities/FormItPluginStyling.css">
+    <!-- plugin scripts -->
+    <script type="text/javascript" src="../../ManageCameras/ManageCameras_Web.js"></script>
+    <script type="text/javascript" src="../../ManageCameras/ManageCameras_Client.js"></script>
+    <script type="text/javascript">
+        FormItInterface.Initialize(function () {
+
+            // subscribe to the message sent when a camera operation ends
+            FormItInterface.SubscribeMessage("FormIt.Message.kCameraChanged", function(msg)
+            {
+                ManageCameras.updateUI();
+            });
+
+            // subscribe to the message sent when Levels are changed
+            FormItInterface.SubscribeMessage("FormIt.Message.kLevelManagerChanged", function(msg)
+            {
+                ManageCameras.updateUI();
+            });
+
+            // subscribe to the message sent when units are changed
+            FormItInterface.SubscribeMessage("FormIt.Message.kUnitTypeChanged", function(msg)
+            {
+                ManageCameras.updateUI();
+            });
+
+            // initialize the UI
+            // this must be called from here, to ensure the HTML page is loaded
+            // before scripts try to access the window document
+            ManageCameras.initializeUI();
+            ManageCameras.updateUI();
+
+        }); // DOMContentLoaded
+    </script>
+</head>
+<body> 
+</body>
+</html>

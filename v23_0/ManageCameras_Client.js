@@ -615,7 +615,6 @@ ManageCameras.updateScenesFromCameras = async function(args)
         // assumes the pasted geometry is still selected
         else
         {
-            // delete key
             await FormIt.Commands.DoCommand('Edit: Delete');
         }
     }

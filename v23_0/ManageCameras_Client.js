@@ -309,11 +309,8 @@ ManageCameras.createSceneCameraGeometry = async function(nHistoryID, scenes, asp
         // copy the new Camera container Group to the clipboard
         await FormIt.Selection.ClearSelections();
         await FormIt.Selection.AddSelections(cameraContainerGroupID);
-        
-        // ctrl + C
-        // TODO: there's got to be a better way to do this
-        // this requires user's cursor to be in the 3D canvas
-        await FormIt.Events.KeyDown(67, 2, "\u0003");
+
+        await FormIt.Commands.DoCommand('Edit: Copy');
         await FormIt.Selection.ClearSelections();
     }
 }
@@ -575,9 +572,7 @@ ManageCameras.updateScenesFromCameras = async function(args)
         await FormIt.GroupEdit.EndEditInContext();
         await FormIt.Selection.ClearSelections();
 
-        // paste in place
-        // ctrl + shift + v
-        await FormIt.Events.KeyDown(86, 3, "\u0016");
+        await FormIt.Commands.DoCommand('Edit: Paste In Place');
 
         // the new geometry should be selected, so get some info about the newly-pasted geometry
         let pastedClipboardData = await FormIt.Clipboard.GetJSONStringForClipboard();
@@ -621,7 +616,7 @@ ManageCameras.updateScenesFromCameras = async function(args)
         else
         {
             // delete key
-            await FormIt.Events.KeyDown(46, 0, "");
+            await FormIt.Commands.DoCommand('Edit: Delete');
         }
     }
 

@@ -305,8 +305,7 @@ ManageCameras.createSceneCameraGeometry = function(nHistoryID, scenes, aspectRat
         FormIt.Selection.ClearSelections();
         FormIt.Selection.AddSelections(cameraContainerGroupID);
         
-        // ctrl + C
-        FormIt.Events.KeyDown(67, 2, "\u0003");
+        FormIt.Commands.DoCommand('Edit: Copy');
         FormIt.Selection.ClearSelections();
     }
 }
@@ -569,9 +568,7 @@ ManageCameras.updateScenesFromCameras = function(args)
         FormIt.GroupEdit.EndEditInContext();
         FormIt.Selection.ClearSelections();
 
-        // paste in place
-        // ctrl + shift + v
-        FormIt.Events.KeyDown(86, 3, "\u0016");
+        FormIt.Commands.DoCommand('Edit: Paste In Place');
 
         // the new geometry should be selected, so get some info about the newly-pasted geometry
         var pastedClipboardData = FormIt.Clipboard.GetJSONStringForClipboard();
@@ -614,8 +611,7 @@ ManageCameras.updateScenesFromCameras = function(args)
         // assumes the pasted geometry is still selected
         else
         {
-            // delete key
-            FormIt.Events.KeyDown(46, 0, "");
+            FormIt.Commands.DoCommand('Edit: Delete');
         }
     }
 

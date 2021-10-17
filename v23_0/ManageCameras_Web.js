@@ -1,7 +1,4 @@
-if (typeof ManageCameras == 'undefined')
-{
-    ManageCameras = {};
-}
+ManageCameras = ManageCameras || {};
 
 /*** web/UI code - runs natively in the plugin process ***/
 
@@ -13,6 +10,12 @@ ManageCameras.cameraHeightFromLeveLabelOriginalContents = '';
 // checkbox input IDs
 ManageCameras.copyCamerasToClipboardCheckboxID = 'copyCamerasToClipboardCheckbox';
 ManageCameras.useClipboardCamerasCheckboxID = 'useClipboardCamerasCheckbox';
+
+// camera data from the client script
+ManageCameras.currentCameraData = undefined;
+ManageCameras.currentLevelsData = undefined;
+ManageCameras.closestLevelName = undefined;
+ManageCameras.closestLevelElevationStr = undefined;
 
 // update the FormIt camera height from the "above level" input
 ManageCameras.setCameraHeightAboveLevelFromInput = async function()
@@ -45,10 +48,10 @@ ManageCameras.updateUI = async function()
 {
     let cameraData = await ManageCameras.getCurrentCameraData();
 
-    currentCameraData = cameraData.currentCameraData;
-    currentLevelsData = cameraData.currentLevelsData;
-    closestLevelName = cameraData.closestLevelName;
-    closestLevelElevationStr = cameraData.closestLevelElevationStr;
+    ManageCameras.currentCameraData = cameraData.currentCameraData;
+    ManageCameras.currentLevelsData = cameraData.currentLevelsData;
+    ManageCameras.closestLevelName = cameraData.closestLevelName;
+    ManageCameras.closestLevelElevationStr = cameraData.closestLevelElevationStr;
 
     // get the camera height from the ground, and set it as the input value
     let cameraHeightFromGroundStr = cameraData.cameraHeightAboveGroundStr;

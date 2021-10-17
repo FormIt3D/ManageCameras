@@ -1,7 +1,4 @@
-if (typeof ManageCameras == 'undefined')
-{
-    ManageCameras = {};
-}
+ManageCameras = ManageCameras || {};
 
 /*** application code - runs asynchronously from plugin process to communicate with FormIt ***/
 
@@ -116,67 +113,6 @@ ManageCameras.setCameraHeightFromGround = async function(args)
     await FormIt.Cameras.SetCameraData(newCameraData);
 }
 
-ManageCameras.getScreenPointInWorldSpace = async function(x, y, planeDistance)
-{
-    // get a pickray at the provided screen point (normalized 0-1)
-    let pickray = await WSM.Utils.PickRayFromNormalizedScreenPoint(x, y);
-    //console.log(JSON.stringify(pickray));
-
-    pickrayPoint = pickray.pickrayLine.point;
-    pickrayVector = pickray.pickrayLine.vector;
-
-    newPickrayPointX = pickrayPoint.x + pickrayVector.x * planeDistance;
-    newPickrayPointY = pickrayPoint.y + pickrayVector.y * planeDistance;
-    newPickrayPointZ = pickrayPoint.z + pickrayVector.z * planeDistance;
-    //console.log(newPickrayPointX + ',' + newPickrayPointY + ',' + newPickrayPointZ);
-
-    let pickrayPoint3d = await WSM.Geom.Point3d(newPickrayPointX, newPickrayPointY, newPickrayPointZ);
-
-    return pickrayPoint3d;
-}
-
-ManageCameras.getViewportAspectRatioByPickray = async function(distance)
-{
-    // get the lower left and upper right screen points
-    let lowerLeftPoint = await ManageCameras.getScreenPointInWorldSpace(0, 1, distance);
-    let lowerRightPoint = await ManageCameras.getScreenPointInWorldSpace(1, 1, distance);
-    let upperLeftPoint = await ManageCameras.getScreenPointInWorldSpace(0, 0, distance);
-
-    // calculate the viewport width and height
-    let viewportWidth = getDistanceBetweenTwoPoints(lowerRightPoint.x, lowerRightPoint.y, lowerRightPoint.z, lowerLeftPoint.x, lowerLeftPoint.y, lowerLeftPoint.z);
-    let viewportHeight = getDistanceBetweenTwoPoints(upperLeftPoint.x, upperLeftPoint.y, upperLeftPoint.z, lowerLeftPoint.x, lowerLeftPoint.y, lowerLeftPoint.z);
-
-    // determine the aspect ratio
-    let aspectRatio = viewportWidth/viewportHeight;
-
-    // TODO: replace this function with one that doesn't require a pickray
-    // the following API will be available in v20 - will be fewer steps to get the aspect ratio, and won't require pickray
-    //let viewportSize = FormIt.Cameras.GetViewportSize();
-    
-    return aspectRatio;
-}
-
-// get Group instances in this history with a particular string attribute key
-ManageCameras.getGroupInstanceByStringAttributeKey = async function(nHistoryID, stringAttributeKey)
-{
-    // get all the instances in this history
-    let potentialCameraContainerObjectsArray = await WSM.APIGetAllObjectsByTypeReadOnly(nHistoryID, WSM.nObjectType.nInstanceType);
-
-    // for each of the objects in this history, look for ones with a particular string attribute key
-    for (let i = 0; i < potentialCameraContainerObjectsArray.length; i++)
-    {
-        let objectID = potentialCameraContainerObjectsArray[i];
-        //console.log("Object ID: " + objectID);
-
-        let objectHasStringAttributeResult = await WSM.Utils.GetStringAttributeForObject(nHistoryID, objectID, stringAttributeKey);
-        // if this object has a string attribute matching the given key, delete it
-        if (objectHasStringAttributeResult.success == true)
-        {
-            return objectID;
-        }
-    }
-}
-
 // delete Group instances in this history with this string attribute key,
 // then replace them with a new one
 ManageCameras.createOrReplaceGroupInstanceByStringAttributeKey = async function(nHistoryID, stringAttributeKey, newValue)
@@ -210,46 +146,12 @@ ManageCameras.createOrReplaceGroupInstanceByStringAttributeKey = async function(
     return newGroupID;
 }
 
-// create a layer by name, if it doesn't exist already, and return its ID
-ManageCameras.getOrCreateLayerByName = async function(nHistoryID, layerName)
-{
-    // if the named layer doesn't exist, create it
-    if (!await FormIt.Layers.LayerExists(layerName))
-    {
-        await FormIt.Layers.AddLayer(nHistoryID, layerName, true);
-        console.log("Created a new Layer: " + "'" + layerName + "'");
-    }
-    else 
-    {
-        console.log("Layer " + "'" + layerName + "'" + " already exists");
-    }
-
-    // need to figure out what ID is
-    // start by getting all Layers
-    let allLayers = await FormIt.Layers.GetLayerList();
-
-    let layerID = undefined;
-
-    // look for the Cameras layer by name, and get the ID
-    for (let i = 0; i < allLayers.length; i++)
-    {
-        if (allLayers[i].Name == layerName)
-        {
-            layerID = allLayers[i].Id;
-            //console.log("Matching Layer ID: " + cameraContainerGroupLayerID);
-            break;
-        }
-    }
-    
-    return layerID;
-}
-
 ManageCameras.createSceneCameraGeometry = async function(nHistoryID, scenes, aspectRatio, args)
 {
     console.log("Building scene camera geometry...");
 
     // create or find the Cameras layer, and get its ID
-    let camerasLayerID = await ManageCameras.getOrCreateLayerByName(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraContainerGroupAndLayerName);
+    let camerasLayerID = await FormIt.PluginUtils.Application.getOrCreateLayerByName(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraContainerGroupAndLayerName);
 
     // create a camera container Group
     let cameraContainerGroupID = await ManageCameras.createOrReplaceGroupInstanceByStringAttributeKey(nHistoryID, ManageCameras.cameraStringAttributeKey, "CameraContainer");
@@ -563,7 +465,7 @@ ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryI
 ManageCameras.updateScenesFromCameras = async function(args)
 {
     // first, check if the Cameras Group exists
-    let cameraContainerGroupID = await ManageCameras.getGroupInstanceByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey);
+    let cameraContainerGroupID = await FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey)[0];
 
     // if specified, use the clipboard data to find the new cameras
     if (args.useClipboard)
@@ -607,7 +509,7 @@ ManageCameras.updateScenesFromCameras = async function(args)
             }
 
             // redefine the camera container group as what was just pasted
-            let cameraContainerGroupID = await ManageCameras.getGroupInstanceByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey);
+            let cameraContainerGroupID = await FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey)[0];
 
             await FormIt.Selection.ClearSelections();
         }
@@ -739,7 +641,7 @@ ManageCameras.executeGenerateCameraGeometry = async function(args)
 
     // get the current camera aspect ratio to use for geometry
     // the distance supplied here is arbitrary
-    let currentAspectRatio = await ManageCameras.getViewportAspectRatioByPickray(10);
+    let currentAspectRatio = await FormIt.PluginUtils.Application.getViewportAspectRatio();
 
     // start an undo manager state - this should suspend WSM and other updates to make this faster
     await FormIt.UndoManagement.BeginState();

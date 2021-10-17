@@ -150,8 +150,8 @@ ManageCameras.initializeUI = function()
             "copyToClipboard" : document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked,
             "useClipboard" : document.getElementById(ManageCameras.useClipboardCamerasCheckboxID).checked
         }
-    
-        window.FormItInterface.CallMethod("ManageCameras.executeGenerateCameraGeometry", args);
+
+        await ManageCameras.executeGenerateCameraGeometry(args);
     });
     contentContainer.appendChild(exportScenesToCamerasButton.element);
 
@@ -173,8 +173,8 @@ ManageCameras.initializeUI = function()
             "copyToClipboard" : document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked,
             "useClipboard" : document.getElementById(ManageCameras.useClipboardCamerasCheckboxID).checked
         }
-    
-        window.FormItInterface.CallMethod("ManageCameras.executeUpdateScenesFromCameras", args);
+
+        await ManageCameras.executeUpdateScenesFromCameras(args);
     });
     contentContainer.appendChild(importScenesFromCamerasButton.element);
 

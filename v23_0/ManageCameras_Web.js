@@ -1,4 +1,4 @@
-ManageCameras = ManageCameras || {};
+window.ManageCameras = window.ManageCameras || {};
 
 /*** web/UI code - runs natively in the plugin process ***/
 
@@ -90,7 +90,7 @@ ManageCameras.updateUI = async function()
 }
 
 // initialize the UI
-ManageCameras.initializeUI = function()
+ManageCameras.initializeUI = async function()
 {
     // create an overall container for all objects that comprise the "content" of the plugin
     // everything except the footer
@@ -144,7 +144,7 @@ ManageCameras.initializeUI = function()
     document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked = true;
 
     // the generate button
-    let exportScenesToCamerasButton = new FormIt.PluginUI.Button('Export Scenes to Cameras', function()
+    let exportScenesToCamerasButton = new FormIt.PluginUI.Button('Export Scenes to Cameras', async function()
     {
         let args = {
             "copyToClipboard" : document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked,
@@ -167,7 +167,7 @@ ManageCameras.initializeUI = function()
     document.getElementById(ManageCameras.useClipboardCamerasCheckboxID).checked = true;
 
     // the update button
-    let importScenesFromCamerasButton = new FormIt.PluginUI.Button('Import Scenes from Cameras', function()
+    let importScenesFromCamerasButton = new FormIt.PluginUI.Button('Import Scenes from Cameras', async function()
     {
         let args = {
             "copyToClipboard" : document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked,

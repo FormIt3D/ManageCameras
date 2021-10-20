@@ -1,4 +1,4 @@
-ManageCameras = ManageCameras || {};
+window.ManageCameras = window.ManageCameras || {};
 
 /*** application code - runs asynchronously from plugin process to communicate with FormIt ***/
 

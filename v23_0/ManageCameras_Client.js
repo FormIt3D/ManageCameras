@@ -606,7 +606,7 @@ ManageCameras.addSceneToAnimation = async function(sceneAndAnimationData)
     if (animationName != "")
     {
         // check if the animation exists already
-        var bAnimationExists = await FormIt.Scenes.GetSceneAnimation(animationName).Result;
+        var bAnimationExists = (await FormIt.Scenes.GetSceneAnimation(animationName)).Result;
 
         // if the animation exists, make sure the incoming loop setting overwrites the existing
         if (bAnimationExists)
@@ -616,7 +616,7 @@ ManageCameras.addSceneToAnimation = async function(sceneAndAnimationData)
         // otherwise, create the animation
         else
         {
-            var defaultName = await FormIt.Scenes.AddSceneAnimation().Name;
+            var defaultName = (await FormIt.Scenes.AddSceneAnimation()).Name;
             await FormIt.Scenes.SetAnimationName(defaultName, animationName);
         }
 
@@ -655,7 +655,7 @@ ManageCameras.executeGenerateCameraGeometry = async function(args)
     await ManageCameras.createSceneCameraGeometry(ManageCameras.cameraContainerGroupHistoryID, allScenes, currentAspectRatio, args);
 
     // end the undo manager state
-    await FormIt.UndoManagement.EndState("Create camera geometry");
+    await FormIt.UndoManagement.EndState("Export Scenes to Cameras");
 }
 
 // this is called by the submit function from the panel - all steps to execute the update of FormIt scenes to match Camera geometry
@@ -664,6 +664,10 @@ ManageCameras.executeUpdateScenesFromCameras = async function(args)
     console.clear();
     console.log("Manage Scene Cameras plugin\n");
 
+    await FormIt.UndoManagement.BeginState();
+
     // create the camera geometry for all scenes
     await ManageCameras.updateScenesFromCameras(args);
+
+    await FormIt.UndoManagement.EndState("Import Scenes from Cameras");
 }

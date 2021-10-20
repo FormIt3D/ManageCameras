@@ -293,7 +293,7 @@ ManageCameras.createSceneCameraGeometry = function(nHistoryID, scenes, aspectRat
     }
 
     var finishCreateCamerasMessage = "Created " + camerasCreatedCount + " new " + camerasWord + " from Scenes.";
-    FormIt.UI.ShowNotification(finishCreateCamerasMessage, FormIt.NotificationType.Information, 0);
+    FormIt.UI.ShowNotification(finishCreateCamerasMessage, FormIt.NotificationType.Success, 0);
     console.log(finishCreateCamerasMessage);
 
     // if specified, copy the new cameras to the clipboard
@@ -480,10 +480,13 @@ ManageCameras.createCameraGeometryFromData = function(sceneData, nHistoryID, sce
     // set the name of the camera group instance
     WSM.APISetObjectProperties(cameraGroupHistoryID, cameraGroupInstanceID, sceneName, false);
 
-    // add an attribute to the camera with the current camera data
-    var value = { SceneData: sceneData };
+    // add an attribute to the camera with the current scene and animation data
+    var animationName = FormIt.Scenes.GetAnimationForScene(sceneName);
+    var bAnimationLoop = FormIt.Scenes.GetAnimationLoop(animationName);
+    var sceneAndAnimationData = { 'SceneData' : sceneData, 'AnimationName' :  animationName, 'AnimationLoop' : bAnimationLoop };
+    console.log(JSON.stringify(sceneAndAnimationData));
     WSM.Utils.SetOrCreateStringAttributeForObject(nHistoryID,
-        cameraGroupInstanceID, manageCamerasStringAttributeKey, JSON.stringify(value));
+        cameraGroupInstanceID, manageCamerasStringAttributeKey, JSON.stringify(sceneAndAnimationData));
 
     var cameraViewPlaneMoveToOriginVector = getVectorBetweenTwoPoints(cameraViewPlaneCentroidPoint3d.x, cameraViewPlaneCentroidPoint3d.y, cameraViewPlaneCentroidPoint3d.z, 0, 0, 0);
     var translatedCameraPlanePositionPoint3d = WSM.Geom.Point3d(cameraViewPlaneMoveToOriginVector[0], cameraViewPlaneMoveToOriginVector[1], cameraViewPlaneMoveToOriginVector[2]);
@@ -562,7 +565,7 @@ ManageCameras.updateScenesFromCameras = function(args)
 
     // if specified, use the clipboard data to find the new cameras
     if (args.useClipboard)
-        {
+    {
 
         // first, ensure the user is in the Main History, with nothing selected
         FormIt.GroupEdit.EndEditInContext();
@@ -647,6 +650,8 @@ ManageCameras.updateScenesFromCameras = function(args)
 
                         // now add the scene with the new data
                         FormIt.Scenes.AddScene(JSON.parse(stringAttributeResult.value).SceneData);
+                        // add the scene to an animation if necessary
+                        ManageCameras.addSceneToAnimation(stringAttributeResult);
 
                         console.log("Updated existing Scene " + existingScenes[i].name + " from matching Camera name.");
 
@@ -666,6 +671,8 @@ ManageCameras.updateScenesFromCameras = function(args)
         {
             var stringAttributeResult = WSM.Utils.GetStringAttributeForObject(cameraContainerGroupRefHistoryID, cameraObjectIDs[i], manageCamerasStringAttributeKey);
             FormIt.Scenes.AddScene(JSON.parse(stringAttributeResult.value).SceneData);
+            // add the scene to an animation if necessary
+            ManageCameras.addSceneToAnimation(stringAttributeResult);
             console.log("Added a new Scene from a Camera: " + JSON.parse(stringAttributeResult.value).SceneData.name);
 
             // add this to the count of added scenes
@@ -701,7 +708,7 @@ ManageCameras.updateScenesFromCameras = function(args)
         }
 
         var finishUpdateScenesMessage = "Added " + addedSceneCount + " new " + addedSceneWord + " and updated " + updatedSceneCount + " existing " + updatedSceneWord + " from Cameras.";
-        FormIt.UI.ShowNotification(finishUpdateScenesMessage, FormIt.NotificationType.Information, 0);
+        FormIt.UI.ShowNotification(finishUpdateScenesMessage, FormIt.NotificationType.Success, 0);
         console.log(finishUpdateScenesMessage);
         return;
     }
@@ -712,6 +719,36 @@ ManageCameras.updateScenesFromCameras = function(args)
         FormIt.UI.ShowNotification(noCamerasMessage, FormIt.NotificationType.Error, 0);
         console.log(noCamerasMessage);
         return;
+    }
+}
+
+// wraps individual APIs to easily add a scene to an animation if required
+ManageCameras.addSceneToAnimation = function(sceneAndAnimationData)
+{
+    var sceneName = JSON.parse(sceneAndAnimationData.value).SceneData.name;
+    var animationName = JSON.parse(sceneAndAnimationData.value).AnimationName;
+    var bAnimationLoop = JSON.parse(sceneAndAnimationData.value).AnimationLoop;
+
+    // only do something if the scene belongs to an animation
+    if (animationName != "")
+    {
+        // check if the animation exists already
+        var bAnimationExists = FormIt.Scenes.GetSceneAnimation(animationName).Result;
+
+        // if the animation exists, make sure the incoming loop setting overwrites the existing
+        if (bAnimationExists)
+        {
+            FormIt.Scenes.SetAnimationLoop(animationName, bAnimationLoop);
+        }
+        // otherwise, create the animation
+        else
+        {
+            var defaultName = FormIt.Scenes.AddSceneAnimation().Name;
+            FormIt.Scenes.SetAnimationName(defaultName, animationName);
+        }
+
+        // now add the scene to the animation
+        FormIt.Scenes.AddScenesToAnimation(animationName, sceneName, "", true);
     }
 }
 

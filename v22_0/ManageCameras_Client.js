@@ -484,7 +484,6 @@ ManageCameras.createCameraGeometryFromData = function(sceneData, nHistoryID, sce
     var animationName = FormIt.Scenes.GetAnimationForScene(sceneName);
     var bAnimationLoop = FormIt.Scenes.GetAnimationLoop(animationName);
     var sceneAndAnimationData = { 'SceneData' : sceneData, 'AnimationName' :  animationName, 'AnimationLoop' : bAnimationLoop };
-    console.log(JSON.stringify(sceneAndAnimationData));
     WSM.Utils.SetOrCreateStringAttributeForObject(nHistoryID,
         cameraGroupInstanceID, manageCamerasStringAttributeKey, JSON.stringify(sceneAndAnimationData));
 

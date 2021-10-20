@@ -17,33 +17,6 @@ ManageCameras.currentLevelsData = undefined;
 ManageCameras.closestLevelName = undefined;
 ManageCameras.closestLevelElevationStr = undefined;
 
-// update the FormIt camera height from the "above level" input
-ManageCameras.setCameraHeightAboveLevelFromInput = async function()
-{
-    let newCameraHeightFromLevelStr = document.getElementById(ManageCameras.cameraHeightFromLevelInputID).value;
-
-    let args = { "currentCameraData" : ManageCameras.currentCameraData,
-                    "closestLevelElevationStr" : ManageCameras.closestLevelElevationStr,
-                    "newCameraHeightFromLevelStr" : newCameraHeightFromLevelStr };
-
-    await ManageCameras.setCameraHeightFromLevel(args);
-     
-    ManageCameras.updateUI();
-}
-
-// update the FormIt camera height from the input value
-ManageCameras.setCameraHeightAboveGroundFromInput = async function()
-{ 
-    let newCameraHeightFromGroundStr = document.getElementById(ManageCameras.cameraHeightFromGroundInputID).value;
-
-    let args = { "currentCameraData" : ManageCameras.currentCameraData,
-                    "newCameraHeightFromGroundStr" : newCameraHeightFromGroundStr };
-
-    await ManageCameras.setCameraHeightFromGround(args);
-     
-    ManageCameras.updateUI();
-}
-
 ManageCameras.updateUI = async function()
 {
     let cameraData = await ManageCameras.getCurrentCameraData();
@@ -60,9 +33,9 @@ ManageCameras.updateUI = async function()
 
     // if there are levels, and if we're above at least one level,
     // show the "camera height above level" module
-    if (currentLevelsData != '' && closestLevelName != undefined)
+    if (ManageCameras.currentLevelsData != '' && ManageCameras.closestLevelName != undefined)
     {
-        // get the camera height above the nearest level and set it as the input avlue
+        // get the camera height above the nearest level and set it as the input value
         let cameraHeightFromLevelInput = document.getElementById(ManageCameras.cameraHeightFromLevelInputID);
         let cameraHeightFromLevelModule = cameraHeightFromLevelInput.parentElement;
         let cameraHeightFromLevelLabel = cameraHeightFromLevelModule.querySelector('.inputLabel');
@@ -114,10 +87,24 @@ ManageCameras.initializeUI = async function()
     let cameraDetailsSubheader = new FormIt.PluginUI.HeaderModule('Main Camera', '', 'headerContainer');
     contentContainer.appendChild(cameraDetailsSubheader.element);
 
-    let cameraHeightAboveLevelModule = new FormIt.PluginUI.TextInputModule('Height Above Level ', 'cameraHeightFromLevelModule', 'inputModuleContainer', ManageCameras.cameraHeightFromLevelInputID, ManageCameras.setCameraHeightAboveLevelFromInput);
+    let cameraHeightAboveLevelModule = new FormIt.PluginUI.TextInputModule('Height Above Level ', 'cameraHeightFromLevelModule', 'inputModuleContainer', ManageCameras.cameraHeightFromLevelInputID, async function()
+    {
+        let newCameraHeightFromLevelStr = document.getElementById(ManageCameras.cameraHeightFromLevelInputID).value;
+    
+        await ManageCameras.setCameraHeightFromLevel(ManageCameras.closestLevelElevationStr, newCameraHeightFromLevelStr);
+         
+        await ManageCameras.updateUI();
+    });
     contentContainer.appendChild(cameraHeightAboveLevelModule.element);
 
-    let cameraHeightAboveGroundModule = new FormIt.PluginUI.TextInputModule('Height Above Ground: ', 'cameraHeightFromGroundModule', 'inputModuleContainer', ManageCameras.cameraHeightFromGroundInputID, ManageCameras.setCameraHeightAboveGroundFromInput);
+    let cameraHeightAboveGroundModule = new FormIt.PluginUI.TextInputModule('Height Above Ground: ', 'cameraHeightFromGroundModule', 'inputModuleContainer', ManageCameras.cameraHeightFromGroundInputID, async function()
+    {
+        let newCameraHeightFromGroundStr = document.getElementById(ManageCameras.cameraHeightFromGroundInputID).value;
+    
+        await ManageCameras.setCameraHeightFromGround(newCameraHeightFromGroundStr);
+         
+        await ManageCameras.updateUI();
+    });
     contentContainer.appendChild(cameraHeightAboveGroundModule.element);
 
     // separator and space

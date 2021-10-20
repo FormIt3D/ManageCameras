@@ -59,55 +59,23 @@ ManageCameras.getCurrentCameraData = async function()
 }
 
 // updates variables about the camera
-ManageCameras.setCameraHeightFromLevel = async function(args)
+ManageCameras.setCameraHeightFromLevel = async function(cameraHeightString, closestLevelElevationString)
 {
-    let newCameraHeightFromLevel = 0;
-    let closestLevelElevation = 0;
+    let newCameraHeightFromLevel = (await FormIt.StringConversion.StringToLinearValue(cameraHeightString)).second;
 
-    // if the input value is a number, use it as-is
-    if (!isNaN(Number(args.newCameraHeightFromLevelStr)))
-    {
-        newCameraHeightFromLevel = FormIt.PluginUtils.currentUnits(Number(args.newCameraHeightFromLevelStr));
-    }
-    // otherwise, convert the string to a number
-    else
-    {
-        newCameraHeightFromLevel = await FormIt.StringConversion.StringToLinearValue(args.newCameraHeightFromLevelStr).second;
-    }
+    let closestLevelElevation = (await FormIt.StringConversion.StringToLinearValue(closestLevelElevationString)).second;
 
-    // if the input value is a number, use it as-is
-    if (!isNaN(Number(args.closestLevelElevationStr)))
-    {
-        closestLevelElevation = FormIt.PluginUtils.currentUnits(Number(args.closestLevelElevationStr));
-    }
-    // otherwise, convert the string to a number
-    else
-    {
-        closestLevelElevation = await FormIt.StringConversion.StringToLinearValue(args.closestLevelElevationStr).second;
-    }
-
-    let newCameraData = args.currentCameraData;
+    let newCameraData = ManageCameras.currentCameraData;
     newCameraData.posZ = closestLevelElevation + newCameraHeightFromLevel;
 
     await FormIt.Cameras.SetCameraData(newCameraData);
 }
 
-ManageCameras.setCameraHeightFromGround = async function(args)
+ManageCameras.setCameraHeightFromGround = async function(cameraHeightString)
 {
-    let newCameraHeightFromGround = 0;
+    let newCameraHeightFromGround = (await FormIt.StringConversion.StringToLinearValue(cameraHeightString)).second;
 
-    // if the input value is a number, use it as-is
-    if (!isNaN(Number(args.newCameraHeightFromGroundStr)))
-    {
-        newCameraHeightFromGround = FormIt.PluginUtils.currentUnits(Number(args.newCameraHeightFromGroundStr));
-    }
-    // otherwise, convert the string to a number
-    else
-    {
-        newCameraHeightFromGround = await FormIt.StringConversion.StringToLinearValue(args.newCameraHeightFromGroundStr).second;
-    }
-
-    let newCameraData = args.currentCameraData;
+    let newCameraData = ManageCameras.currentCameraData;
     newCameraData.posZ = newCameraHeightFromGround;
 
     await FormIt.Cameras.SetCameraData(newCameraData);
@@ -243,23 +211,23 @@ ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryI
     width *= cameraDepth;
 
     // construct the camera forward vector
-    let cameraForwardVector = multiplyVectorByQuaternion(0, 0, -1, sceneData.camera.rotX, sceneData.camera.rotY, sceneData.camera.rotZ, sceneData.camera.rotW);
+    let cameraForwardVector = FormIt.PluginUtils.Math.multiplyVectorByQuaternion(0, 0, -1, sceneData.camera.rotX, sceneData.camera.rotY, sceneData.camera.rotZ, sceneData.camera.rotW);
     // scale the vector by the distance
-    cameraForwardVector = scaleVector(cameraForwardVector, cameraDepth);
+    cameraForwardVector = FormIt.PluginUtils.Math.scaleVector(cameraForwardVector, cameraDepth);
     let cameraForwardVector3d = await WSM.Geom.Vector3d(cameraForwardVector[0], cameraForwardVector[1], cameraForwardVector[2]);
     //console.log(JSON.stringify(cameraForwardVector3d));
 
     // construct the camera up vector
-    let cameraUpVector = multiplyVectorByQuaternion(0, 1, 0, sceneData.camera.rotX, sceneData.camera.rotY, sceneData.camera.rotZ, sceneData.camera.rotW);   
+    let cameraUpVector = FormIt.PluginUtils.Math.multiplyVectorByQuaternion(0, 1, 0, sceneData.camera.rotX, sceneData.camera.rotY, sceneData.camera.rotZ, sceneData.camera.rotW);   
     // scale the vector by the  height
-    cameraUpVector = scaleVector(cameraUpVector, height);
+    cameraUpVector = FormIt.PluginUtils.Math.scaleVector(cameraUpVector, height);
     let cameraUpVector3d = await WSM.Geom.Vector3d(cameraUpVector[0], cameraUpVector[1], cameraUpVector[2]);
     //console.log(JSON.stringify(cameraUpVector3d));
 
     // construct the camera right vector
-    let cameraRightVector = multiplyVectorByQuaternion(-1, 0, 0, sceneData.camera.rotX, sceneData.camera.rotY, sceneData.camera.rotZ, sceneData.camera.rotW);
+    let cameraRightVector = FormIt.PluginUtils.Math.multiplyVectorByQuaternion(-1, 0, 0, sceneData.camera.rotX, sceneData.camera.rotY, sceneData.camera.rotZ, sceneData.camera.rotW);
     // scale the vector by the  width
-    cameraRightVector = scaleVector(cameraRightVector, width);
+    cameraRightVector = FormIt.PluginUtils.Math.scaleVector(cameraRightVector, width);
     let cameraRightVector3d = await WSM.Geom.Vector3d(cameraRightVector[0], cameraRightVector[1], cameraRightVector[2]);
     //console.log(JSON.stringify(cameraRightVector3d));
 
@@ -311,26 +279,26 @@ ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryI
     let frustumLinesObjectIDs = [];
     // create lines from the camera position to the camera corners
     let frustumLine0 = await WSM.APICreatePolyline(nHistoryID, frustumLineEndoints0, false);
-    frustumLinesObjectIDs.push(WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nObjectType.nEdgeType).created);
+    frustumLinesObjectIDs.push((await WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nObjectType.nEdgeType)).created);
     let frustumLine1 = await WSM.APICreatePolyline(nHistoryID, frustumLineEndpoints1, false);
-    frustumLinesObjectIDs.push(WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nObjectType.nEdgeType).created);
+    frustumLinesObjectIDs.push((await WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nObjectType.nEdgeType)).created);
     let frustumLine2 = await WSM.APICreatePolyline(nHistoryID, frustumLineEndpoints2, false);
-    frustumLinesObjectIDs.push(WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nObjectType.nEdgeType).created);
+    frustumLinesObjectIDs.push((await WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nObjectType.nEdgeType)).created);
     let frustumLine3 = await WSM.APICreatePolyline(nHistoryID, frustumLineEndpoints3, false);
-    frustumLinesObjectIDs.push(WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nObjectType.nEdgeType).created);
+    frustumLinesObjectIDs.push((await WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nObjectType.nEdgeType)).created);
 
     // connect the points with a rectangle - this will create a rectangular surface in front of the camera
     await WSM.APICreatePolyline(nHistoryID, points, true);
 
-    // get the faces and push it into the array
-    let faceObjectID = await WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nFaceType).created;
+    // get the face and push it into the array
+    let faceObjectID = (await WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(nHistoryID, WSM.nObjectType.nFaceType)).created;
 
     // add the camera position vertex and the frustum lines to the camera geometry array
     //cameraObjectIDs.push(cameraPosVertexObjectID);
     cameraObjectIDs.push(frustumLinesObjectIDs);
     cameraObjectIDs.push(faceObjectID);
 
-    cameraObjectIDs = flattenArray(cameraObjectIDs);
+    cameraObjectIDs = FormIt.PluginUtils.Array.flatten(cameraObjectIDs);
 
     //
     // we want to put the camera in a Group, and set the LCS to align with the camera geometry
@@ -339,7 +307,7 @@ ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryI
     // 
 
     // get the vector from the camera's position to the origin
-    let cameraToOriginVector = getVectorBetweenTwoPoints(cameraPosition.x, cameraPosition.y, cameraPosition.z, 0, 0, 0);
+    let cameraToOriginVector = FormIt.PluginUtils.Math.getVectorBetweenTwoPoints(cameraPosition.x, cameraPosition.y, cameraPosition.z, 0, 0, 0);
     // convert the vector to the resulting WSM point3d
     let translatedCameraPositionPoint3d = await WSM.Geom.Point3d(cameraToOriginVector[0], cameraToOriginVector[1], cameraToOriginVector[2]);
 
@@ -377,7 +345,7 @@ ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryI
 
     // get the face - this is the camera plane
     // this assumes there's only 1 face represented from the camera geometry
-    let newContextCameraViewPlaneFaceID = JSON.parse(await WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(cameraGroupHistoryID, WSM.nFaceType).created);
+    let newContextCameraViewPlaneFaceID = JSON.parse((await WSM.APIGetCreatedChangedAndDeletedInActiveDeltaReadOnly(cameraGroupHistoryID, WSM.nObjectType.nFaceType)).created);
     
     let cameraViewPlaneCentroidPoint3d = await WSM.APIGetFaceCentroidPoint3dReadOnly(cameraGroupHistoryID, newContextCameraViewPlaneFaceID);
     //console.log(cameraViewPlaneCentroidPoint3d);
@@ -394,7 +362,7 @@ ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryI
     await WSM.Utils.SetOrCreateStringAttributeForObject(nHistoryID,
         cameraGroupInstanceID, ManageCameras.cameraStringAttributeKey, JSON.stringify(sceneAndAnimationData));
 
-    let cameraViewPlaneMoveToOriginVector = getVectorBetweenTwoPoints(cameraViewPlaneCentroidPoint3d.x, cameraViewPlaneCentroidPoint3d.y, cameraViewPlaneCentroidPoint3d.z, 0, 0, 0);
+    let cameraViewPlaneMoveToOriginVector = FormIt.PluginUtils.Math.getVectorBetweenTwoPoints(cameraViewPlaneCentroidPoint3d.x, cameraViewPlaneCentroidPoint3d.y, cameraViewPlaneCentroidPoint3d.z, 0, 0, 0);
     let translatedCameraPlanePositionPoint3d = await WSM.Geom.Point3d(cameraViewPlaneMoveToOriginVector[0], cameraViewPlaneMoveToOriginVector[1], cameraViewPlaneMoveToOriginVector[2]);
 
     // create a transform for moving the camera plane to the origin
@@ -467,7 +435,7 @@ ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryI
 ManageCameras.updateScenesFromCameras = async function(args)
 {
     // first, check if the Cameras Group exists
-    let cameraContainerGroupID = await FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey)[0];
+    let cameraContainerGroupID = (await FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey))[0];
 
     // if specified, use the clipboard data to find the new cameras
     if (args.useClipboard)
@@ -511,7 +479,7 @@ ManageCameras.updateScenesFromCameras = async function(args)
             }
 
             // redefine the camera container group as what was just pasted
-            let cameraContainerGroupID = await FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey)[0];
+            cameraContainerGroupID = (await FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey))[0];
 
             await FormIt.Selection.ClearSelections();
         }

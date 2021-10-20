@@ -200,7 +200,7 @@ ManageCameras.createSceneCameraGeometry = async function(nHistoryID, scenes, asp
 
     // finished creating cameras, so let the user know what was changed
     let finishCreateCamerasMessage = "Created " + camerasCreatedCount + " new " + camerasWord + " from Scenes.";
-    await FormIt.UI.ShowNotification(finishCreateCamerasMessage, FormIt.NotificationType.Information, 0);
+    await FormIt.UI.ShowNotification(finishCreateCamerasMessage, FormIt.NotificationType.Success, 0);
     console.log(finishCreateCamerasMessage);
 
     // if specified, copy the new cameras to the clipboard
@@ -387,10 +387,12 @@ ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryI
     // set the name of the camera group instance
     await WSM.APISetObjectProperties(cameraGroupHistoryID, cameraGroupInstanceID, sceneName, false);
 
-    // add an attribute to the camera with the current camera data
-    let value = { SceneData: sceneData };
+    // add an attribute to the camera with the current scene and animation data
+    var animationName = await FormIt.Scenes.GetAnimationForScene(sceneName);
+    var bAnimationLoop = await FormIt.Scenes.GetAnimationLoop(animationName);
+    var sceneAndAnimationData = { 'SceneData' : sceneData, 'AnimationName' :  animationName, 'AnimationLoop' : bAnimationLoop };
     await WSM.Utils.SetOrCreateStringAttributeForObject(nHistoryID,
-        cameraGroupInstanceID, ManageCameras.cameraStringAttributeKey, JSON.stringify(value));
+        cameraGroupInstanceID, ManageCameras.cameraStringAttributeKey, JSON.stringify(sceneAndAnimationData));
 
     let cameraViewPlaneMoveToOriginVector = getVectorBetweenTwoPoints(cameraViewPlaneCentroidPoint3d.x, cameraViewPlaneCentroidPoint3d.y, cameraViewPlaneCentroidPoint3d.z, 0, 0, 0);
     let translatedCameraPlanePositionPoint3d = await WSM.Geom.Point3d(cameraViewPlaneMoveToOriginVector[0], cameraViewPlaneMoveToOriginVector[1], cameraViewPlaneMoveToOriginVector[2]);
@@ -548,11 +550,14 @@ ManageCameras.updateScenesFromCameras = async function(args)
                     // check if this camera object's Scene Data name matches the scene name
                     if (JSON.parse(stringAttributeResult.value).SceneData.name == existingScenes[i].name)
                     {
-                        let existingSceneData = JSON.parse(stringAttributeResult.value).SceneData;
-                        existingSceneData.camera = JSON.parse(stringAttributeResult.value).SceneData.camera;
-                        // replace this scene's data with the camera data
-                        existingScenes[i] = existingSceneData;
-                        await FormIt.Scenes.SetScenes(existingScenes);
+                        // first, delete the existing scene - we're going to replace it
+                        FormIt.Scenes.RemoveScene(existingScenes[i].name);
+
+                        // now add the scene with the new data
+                        await FormIt.Scenes.AddScene(JSON.parse(stringAttributeResult.value).SceneData);
+                        // add the scene to an animation if necessary
+                        await ManageCameras.addSceneToAnimation(stringAttributeResult);
+
                         console.log("Updated existing Scene " + existingScenes[i].name + " from matching Camera name.");
 
                         // remove this camera from the list, so the next step can add the remaining cameras
@@ -571,6 +576,8 @@ ManageCameras.updateScenesFromCameras = async function(args)
         {
             let stringAttributeResult = await WSM.Utils.GetStringAttributeForObject(cameraContainerGroupRefHistoryID, cameraObjectIDs[i], ManageCameras.cameraStringAttributeKey);
             await FormIt.Scenes.AddScene(JSON.parse(stringAttributeResult.value).SceneData);
+            // add the scene to an animation if necessary
+            await ManageCameras.addSceneToAnimation(stringAttributeResult);
             console.log("Added a new Scene from a Camera: " + JSON.parse(stringAttributeResult.value).SceneData.name);
 
             // add this to the count of added scenes
@@ -606,7 +613,7 @@ ManageCameras.updateScenesFromCameras = async function(args)
         }
 
         let finishUpdateScenesMessage = "Added " + addedSceneCount + " new " + addedSceneWord + " and updated " + updatedSceneCount + " existing " + updatedSceneWord + " from Cameras.";
-        await FormIt.UI.ShowNotification(finishUpdateScenesMessage, FormIt.NotificationType.Information, 0);
+        await FormIt.UI.ShowNotification(finishUpdateScenesMessage, FormIt.NotificationType.Success, 0);
         console.log(finishUpdateScenesMessage);
         return;
     }
@@ -617,6 +624,36 @@ ManageCameras.updateScenesFromCameras = async function(args)
         await FormIt.UI.ShowNotification(noCamerasMessage, FormIt.NotificationType.Error, 0);
         console.log(noCamerasMessage);
         return;
+    }
+}
+
+// adds a scene to an animation if required
+ManageCameras.addSceneToAnimation = async function(sceneAndAnimationData)
+{
+    var sceneName = JSON.parse(sceneAndAnimationData.value).SceneData.name;
+    var animationName = JSON.parse(sceneAndAnimationData.value).AnimationName;
+    var bAnimationLoop = JSON.parse(sceneAndAnimationData.value).AnimationLoop;
+
+    // only do something if the scene belongs to an animation
+    if (animationName != "")
+    {
+        // check if the animation exists already
+        var bAnimationExists = await FormIt.Scenes.GetSceneAnimation(animationName).Result;
+
+        // if the animation exists, make sure the incoming loop setting overwrites the existing
+        if (bAnimationExists)
+        {
+            await FormIt.Scenes.SetAnimationLoop(animationName, bAnimationLoop);
+        }
+        // otherwise, create the animation
+        else
+        {
+            var defaultName = await FormIt.Scenes.AddSceneAnimation().Name;
+            await FormIt.Scenes.SetAnimationName(defaultName, animationName);
+        }
+
+        // now add the scene to the animation
+        await FormIt.Scenes.AddScenesToAnimation(animationName, sceneName, "", true);
     }
 }
 

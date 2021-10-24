@@ -149,7 +149,7 @@ ManageCameras.createSceneCameraGeometry = async function(nHistoryID, scenes, asp
         //console.log("Scene name: " + sceneName);
 
         // create the geometry for this camera
-        await ManageCameras.createCameraGeometryFromData(sceneData, cameraContainerGroupRefHistoryID, sceneName, aspectRatio);
+        await ManageCameras.createCameraGeometryFromData(sceneData, cameraContainerGroupRefHistoryID, aspectRatio);
 
         camerasCreatedCount++;
 
@@ -186,7 +186,7 @@ ManageCameras.createSceneCameraGeometry = async function(nHistoryID, scenes, asp
 }
 
 // creates camera geometry from camera data
-ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryID, sceneName, aspectRatio)
+ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryID, aspectRatio)
 {
     // distance from the point to the camera plane
     let cameraDepth = 5;
@@ -351,12 +351,12 @@ ManageCameras.createCameraGeometryFromData = async function(sceneData, nHistoryI
     //console.log(cameraViewPlaneCentroidPoint3d);
 
     // set the name of the camera group
-    await WSM.APISetRevitFamilyInformation(cameraGroupHistoryID, false, false, "", "Camera-" + sceneName, "", "");
+    await WSM.APISetRevitFamilyInformation(cameraGroupHistoryID, false, false, "", "Camera-" + sceneData.name, "", "");
     // set the name of the camera group instance
-    await WSM.APISetObjectProperties(cameraGroupHistoryID, cameraGroupInstanceID, sceneName, false);
+    await WSM.APISetObjectProperties(cameraGroupHistoryID, cameraGroupInstanceID, sceneData.name, false);
 
     // add an attribute to the camera with the current scene and animation data
-    var animationName = await FormIt.Scenes.GetAnimationForScene(sceneName);
+    var animationName = await FormIt.Scenes.GetAnimationForScene(sceneData.name);
     var bAnimationLoop = await FormIt.Scenes.GetAnimationLoop(animationName);
     var sceneAndAnimationData = { 'SceneData' : sceneData, 'AnimationName' :  animationName, 'AnimationLoop' : bAnimationLoop };
     await WSM.Utils.SetOrCreateStringAttributeForObject(nHistoryID,

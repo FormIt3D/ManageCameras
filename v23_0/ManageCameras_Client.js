@@ -215,7 +215,12 @@ ManageCameras.createCameraGeometryFromCameraData = async function(nHistoryID, ca
        let FOV = cameraData.FOV;
    
        // determine the normalized view width and height
-       if (aspectRatio <= 1.0) {
+       // an aspect ratio of zero will use the current camera's aspect ratio
+       if (aspectRatio == 0) {
+            let viewportSize = await FormIt.Cameras.GetViewportSize();
+            width = viewportSize.width;
+            height = viewportSize.width 
+       } else if (aspectRatio <= 1.0) {
            width = Math.tan(FOV);
            height = width / aspectRatio;
        } else {

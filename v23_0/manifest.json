@@ -2,7 +2,10 @@
     "PluginName": "Manage Cameras",
     "PluginDescription": "Provides a variety of operations related to Cameras, including modifying the current Camera and generating Cameras from Scenes.",
     "PluginType": "Panel",
-    "Scripts": [],
+    "Scripts": [
+        "https://formit3d.github.io/SharedPluginUtilities/FormItPluginUtils.js",
+        "PLUGINLOCATION/ManageCameras_Client.js"
+    ],
     "Panel": "PLUGINLOCATION/index.html",
     "PanelIcon": "PLUGINLOCATION/img/manage_cameras@2x.png"
 }

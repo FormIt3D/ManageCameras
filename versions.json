@@ -13,6 +13,6 @@
             "minor":0
         },
         "path":"v23_0",
-        "reason":"Converting to web-side async/await"
+        "reason":"Refactoring to share camera code with other plugins"
     }
 ]

@@ -191,9 +191,10 @@ ManageCameras.createCameraObjectFromSceneData = function(cameraContainerGroupHis
 {
     var cameraData = sceneData.camera;
     var cameraGroupInstanceID = ManageCameras.createCameraGeometryFromCameraData(cameraContainerGroupHistoryID, cameraData, aspectRatio);
+    var cameraGroupHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(cameraContainerGroupHistoryID, cameraGroupInstanceID);
     
     // set the name of the camera group
-    WSM.APISetRevitFamilyInformation(cameraContainerGroupHistoryID, false, false, "", "Camera-" + sceneData.name, "", "");
+    WSM.APISetRevitFamilyInformation(cameraGroupHistoryID, false, false, "", "Camera", "", "");
     // set the name of the camera group instance
     WSM.APISetObjectProperties(cameraContainerGroupHistoryID, cameraGroupInstanceID, sceneData.name, false);
 

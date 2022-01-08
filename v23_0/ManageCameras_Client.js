@@ -4,6 +4,7 @@ if (typeof ManageCameras == 'undefined')
 }
 
 /*** application code - runs asynchronously from plugin process to communicate with FormIt ***/
+/*** the FormIt application-side JS engine only supports ES5 syntax, so use var here ***/
 
 // the container Group for cameras will be created in the Main History (0)
 ManageCameras.cameraContainerGroupHistoryID = 0;
@@ -634,6 +635,26 @@ ManageCameras.addSceneToAnimation = function(sceneAndAnimationData)
 
         // now add the scene to the animation
         FormIt.Scenes.AddScenesToAnimation(animationName, sceneName, "", true);
+    }
+}
+
+ManageCameras.getCameraPlaneHistoryID = function(cameraObjectInstanceID)
+{
+    var matchPhotoObjectHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(0, cameraObjectInstanceID); // TODO: don't assume history 0
+
+    // the camera object contains two instances - one for the frustum lines, one for the camera plane
+    var aCameraObjectNestedInstanceIDs = WSM.APIGetAllObjectsByTypeReadOnly(matchPhotoObjectHistoryID, WSM.nObjectType.nInstanceType);
+
+    for (var i = 0; i < aCameraObjectNestedInstanceIDs.length; i++)
+    {
+        var nestedHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(matchPhotoObjectHistoryID, aCameraObjectNestedInstanceIDs[i]);
+
+        var nFaceID = WSM.APIGetAllObjectsByTypeReadOnly(nestedHistoryID, WSM.nObjectType.nFaceType);
+
+        if (nFaceID != null)
+        {
+            return nestedHistoryID;
+        }
     }
 }
 

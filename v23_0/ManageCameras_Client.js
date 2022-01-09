@@ -85,37 +85,11 @@ ManageCameras.setCameraHeightFromGround = function(args)
     FormIt.Cameras.SetCameraData(newCameraData);
 }
 
-// delete Group instances in this history with this string attribute key,
-// then replace them with a new one
-ManageCameras.createOrReplaceGroupInstanceByStringAttributeKey = function(nHistoryID, stringAttributeKey, newValue)
+// get the history ID for the container of camera objects
+// primarily used for the MatchPhoto plugin
+ManageCameras.getOrCreateCameraObjectContainerHistoryID = function(nHistoryID, stringAttributeKey)
 {
-    // get all the objects in the designated Camera container Group history
-    var potentialCameraContainerObjectsArray = WSM.APIGetAllObjectsByTypeReadOnly(nHistoryID, WSM.nObjectType.nInstanceType);
-
-    // for each of the objects in this history, look for ones with a particular string attribute key
-    for (var i = 0; i < potentialCameraContainerObjectsArray.length; i++)
-    {
-        var objectID = potentialCameraContainerObjectsArray[i];
-        //console.log("Object ID: " + objectID);
-
-        var objectHasStringAttributeResult = WSM.Utils.GetStringAttributeForObject(nHistoryID, objectID, stringAttributeKey);
-        // if this object has a string attribute matching the given key, delete it
-        if (objectHasStringAttributeResult.success == true)
-        {
-            WSM.APIDeleteObject(nHistoryID, objectID);
-        }
-    }
-
-    // now that any existing Camera container Groups have been deleted, make a new one
-    var newGroupID = WSM.APICreateGroup(nHistoryID, [])
-    // get the instance ID of the Group
-    var newGroupInstanceID = JSON.parse(WSM.APIGetObjectsByTypeReadOnly(nHistoryID, newGroupID, WSM.nObjectType.nInstanceType));
-
-    // add an attribute to the camera container
-    WSM.Utils.SetOrCreateStringAttributeForObject(nHistoryID,
-        newGroupInstanceID, ManageCameras.cameraStringAttributeKey, newValue);
-
-    return newGroupID;
+    
 }
 
 ManageCameras.createCameraGeometryForScenes = function(nHistoryID, scenes, aspectRatio, bCopyToClipboard)
@@ -126,7 +100,7 @@ ManageCameras.createCameraGeometryForScenes = function(nHistoryID, scenes, aspec
     var camerasLayerID = FormIt.PluginUtils.Application.getOrCreateLayerByName(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraContainerGroupAndLayerName);
 
     // create a camera container Group
-    var cameraContainerGroupID = ManageCameras.createOrReplaceGroupInstanceByStringAttributeKey(nHistoryID, ManageCameras.cameraStringAttributeKey, "CameraContainer");
+    var cameraContainerGroupID = FormIt.PluginUtils.Applicatoin.createOrReplaceGroupInstanceByStringAttributeKey(nHistoryID, ManageCameras.cameraStringAttributeKey, "CameraContainer");
     // get the instance ID of the Group
     var cameraContainerGroupInstanceID = JSON.parse(WSM.APIGetObjectsByTypeReadOnly(nHistoryID, cameraContainerGroupID, WSM.nObjectType.nInstanceType));
     // get the history for the camera container Group
@@ -638,9 +612,9 @@ ManageCameras.addSceneToAnimation = function(sceneAndAnimationData)
     }
 }
 
-ManageCameras.getCameraPlaneHistoryID = function(cameraObjectInstanceID)
+ManageCameras.getCameraPlaneHistoryID = function(nCameraObjectContainerHistoryID, nCameraObjectInstanceID)
 {
-    var matchPhotoObjectHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(0, cameraObjectInstanceID); // TODO: don't assume history 0
+    var matchPhotoObjectHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(nCameraObjectContainerHistoryID, nCameraObjectInstanceID);
 
     // the camera object contains two instances - one for the frustum lines, one for the camera plane
     var aCameraObjectNestedInstanceIDs = WSM.APIGetAllObjectsByTypeReadOnly(matchPhotoObjectHistoryID, WSM.nObjectType.nInstanceType);

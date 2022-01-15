@@ -336,6 +336,9 @@ ManageCameras.createCameraGeometryFromCameraData = function(nHistoryID, cameraDa
     // create a new history for the camera
     var cameraGroupHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(nHistoryID, cameraGroupID);
 
+    // store the camera data on the camera instance
+    ManageCameras.setCameraDataInCameraObjectAttribute(nHistoryID, cameraGroupInstanceID, cameraData);
+
     //
     // put the camera plane in its own Group, with the origin at the centroid
     //
@@ -630,6 +633,18 @@ ManageCameras.getCameraPlaneHistoryID = function(nCameraObjectContainerHistoryID
             return nestedHistoryID;
         }
     }
+}
+
+ManageCameras.getCameraDataFromCameraObjectAttribute = function(nContextHistoryID, nCameraObjectInstanceID)
+{
+    return WSM.Utils.GetStringAttributeForObject(nContextHistoryID, nCameraObjectInstanceID, ManageCameras.cameraStringAttributeKey).value;
+}
+
+ManageCameras.setCameraDataInCameraObjectAttribute = function(nContextHistoryID, nCameraObjectInstanceID, cameraData)
+{
+    // store the camera data on the camera instance
+    WSM.Utils.SetOrCreateStringAttributeForObject(nContextHistoryID,
+        nCameraObjectInstanceID, ManageCameras.cameraStringAttributeKey, JSON.stringify(cameraData));
 }
 
 // this is called by the submit function from the panel - all steps to execute the generation of camera geometry

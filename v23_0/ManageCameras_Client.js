@@ -15,6 +15,9 @@ ManageCameras.cameraContainerGroupAndLayerName = "Cameras";
 // the string attribute key used for all Manage Cameras objects
 ManageCameras.cameraStringAttributeKey = "FormIt::Plugins::ManageCameras";
 
+// the default camera plane distance - from camera position point to plane (in feet)
+ManageCameras.defaultCameraPlaneDistance = 5;
+
 // updates variables about the camera
 ManageCameras.getCurrentCameraData = function()
 {
@@ -165,7 +168,7 @@ ManageCameras.createCameraGeometryForScenes = function(nHistoryID, scenes, aspec
 ManageCameras.createCameraObjectFromSceneData = function(cameraContainerGroupHistoryID, sceneData, aspectRatio)
 {
     var cameraData = sceneData.camera;
-    var cameraGroupInstanceID = ManageCameras.createCameraGeometryFromCameraData(cameraContainerGroupHistoryID, cameraData, aspectRatio);
+    var cameraGroupInstanceID = ManageCameras.createCameraGeometryFromCameraData(cameraContainerGroupHistoryID, cameraData, aspectRatio, ManageCameras.defaultCameraPlaneDistance);
     var cameraGroupHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(cameraContainerGroupHistoryID, cameraGroupInstanceID);
     
     // set the name of the camera group
@@ -182,16 +185,18 @@ ManageCameras.createCameraObjectFromSceneData = function(cameraContainerGroupHis
 }
 
 // creates camera geometry from the given camera data, and returns the instance ID of the generated camera
-ManageCameras.createCameraGeometryFromCameraData = function(nHistoryID, cameraData, aspectRatio)
+ManageCameras.createCameraGeometryFromCameraData = function(nHistoryID, cameraData, aspectRatio, cameraPlaneDistance)
 {
-    // distance from the point to the camera plane
-    var cameraDepth = 5;
-
     // cameras will need to be moved to the origin, then Grouped, then moved back (to get the LCS correct)
     var origin = WSM.Geom.Point3d(0, 0, 0);
 
     // get the FOV from the camera data
     var FOV = cameraData.FOV;
+
+    if (cameraPlaneDistance == undefined)
+    {
+        cameraPlaneDistance = ManageCameras.defaultCameraPlaneDistance;
+    }
 
     // determine the normalized view width and height
     // an aspect ratio of zero will use the current camera's aspect ratio
@@ -204,13 +209,13 @@ ManageCameras.createCameraGeometryFromCameraData = function(nHistoryID, cameraDa
     }
    
     // multiply the width and height by distance
-    height *= cameraDepth;
-    width *= cameraDepth;
+    height *= cameraPlaneDistance;
+    width *= cameraPlaneDistance;
 
     // construct the camera forward vector
     var cameraForwardVector = FormIt.PluginUtils.Math.multiplyVectorByQuaternion(0, 0, -1, cameraData.rotX, cameraData.rotY, cameraData.rotZ, cameraData.rotW);
     // scale the vector by the distance
-    cameraForwardVector = FormIt.PluginUtils.Math.scaleVector(cameraForwardVector, cameraDepth);
+    cameraForwardVector = FormIt.PluginUtils.Math.scaleVector(cameraForwardVector, cameraPlaneDistance);
     var cameraForwardVector3d = WSM.Geom.Vector3d(cameraForwardVector[0], cameraForwardVector[1], cameraForwardVector[2]);
     //console.log(JSON.stringify(cameraForwardVector3d));
 

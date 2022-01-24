@@ -103,6 +103,8 @@ ManageCameras.createCameraGeometryForScenes = function(nHistoryID, scenes, aspec
 
     // create or find the Cameras layer, and get its ID
     var camerasLayerID = FormIt.PluginUtils.Application.getOrCreateLayerByName(ManageCameras.camerasContainerContextHistoryID, ManageCameras.camerasContainerLayerName);
+    // set the camera container object to not be sent to Revit
+    FormIt.Layers.SetLoadInRevit(camerasLayerID, false);
 
     // create a camera container Group
     var cameraContainerGroupID = FormIt.PluginUtils.Application.createOrReplaceGroupInstanceByStringAttributeKey(nHistoryID, ManageCameras.camerasContainerStringAttributeKey, "");

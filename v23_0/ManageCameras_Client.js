@@ -7,13 +7,19 @@ if (typeof ManageCameras == 'undefined')
 /*** the FormIt application-side JS engine only supports ES5 syntax, so use var here ***/
 
 // the container Group for cameras will be created in the Main History (0)
-ManageCameras.cameraContainerGroupHistoryID = 0;
+ManageCameras.camerasContainerContextHistoryID = 0;
 
 // the name of the container Group that will contain all cameras
-ManageCameras.cameraContainerGroupAndLayerName = "Cameras";
+ManageCameras.camerasContainerGroupInstanceName = "Manage Cameras - Container";
+ManageCameras.camerasContainerLayerName = "Cameras";
+ManageCameras.cameraObjectGroupName = "Camera";
+//ManageCameras.cameraContainerLayerNameLegacy = "Cameras"; // use if the layer name changes
 
-// the string attribute key used for all Manage Cameras objects
-ManageCameras.cameraStringAttributeKey = "FormIt::Plugins::ManageCameras";
+// string attribute keys used for all Manage Cameras objects and their container
+ManageCameras.camerasContainerStringAttributeKey = "FormIt::Plugins::ManageCameras::CamerasContainer";
+ManageCameras.cameraObjectSceneDataAttributeKey = "FormIt::Plugins::ManageCameras::CameraObject::SceneData";
+ManageCameras.cameraObjectCameraDataAttributeKey = "FormIt::Plugins::ManageCameras::CameraObject::CameraData";
+ManageCameras.camerasContainerStringAttributeKeyLegacy = "FormIt::Plugins::ManageCameras"; // legacy
 
 // the default camera plane distance - from camera position point to plane (in feet)
 ManageCameras.defaultCameraPlaneDistance = 5;
@@ -88,22 +94,18 @@ ManageCameras.setCameraHeightFromGround = function(args)
     FormIt.Cameras.SetCameraData(newCameraData);
 }
 
-// get the history ID for the container of camera objects
-// primarily used for the MatchPhoto plugin
-ManageCameras.getOrCreateCameraObjectContainerHistoryID = function(nHistoryID, stringAttributeKey)
-{
-    
-}
-
 ManageCameras.createCameraGeometryForScenes = function(nHistoryID, scenes, aspectRatio, bCopyToClipboard)
 {
     console.log("Building scene camera geometry...");
 
+    // first, delete legacy data if it exists
+    ManageCameras.deleteLegacyData();
+
     // create or find the Cameras layer, and get its ID
-    var camerasLayerID = FormIt.PluginUtils.Application.getOrCreateLayerByName(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraContainerGroupAndLayerName);
+    var camerasLayerID = FormIt.PluginUtils.Application.getOrCreateLayerByName(ManageCameras.camerasContainerContextHistoryID, ManageCameras.camerasContainerLayerName);
 
     // create a camera container Group
-    var cameraContainerGroupID = FormIt.PluginUtils.Applicatoin.createOrReplaceGroupInstanceByStringAttributeKey(nHistoryID, ManageCameras.cameraStringAttributeKey, "CameraContainer");
+    var cameraContainerGroupID = FormIt.PluginUtils.Application.createOrReplaceGroupInstanceByStringAttributeKey(nHistoryID, ManageCameras.camerasContainerStringAttributeKey, "");
     // get the instance ID of the Group
     var cameraContainerGroupInstanceID = JSON.parse(WSM.APIGetObjectsByTypeReadOnly(nHistoryID, cameraContainerGroupID, WSM.nObjectType.nInstanceType));
     // get the history for the camera container Group
@@ -113,9 +115,9 @@ ManageCameras.createCameraGeometryForScenes = function(nHistoryID, scenes, aspec
     FormIt.Layers.AssignLayerToObjects(camerasLayerID, cameraContainerGroupInstanceID);
 
     // set the name of the camera container group
-    WSM.APISetObjectProperties(nHistoryID, cameraContainerGroupInstanceID, ManageCameras.cameraContainerGroupAndLayerName, false);
+    WSM.APISetObjectProperties(nHistoryID, cameraContainerGroupInstanceID, ManageCameras.camerasContainerGroupInstanceName, false);
     // set the name of the camera container group instance
-    WSM.APISetRevitFamilyInformation(cameraContainerGroupRefHistoryID, false, false, "", ManageCameras.cameraContainerGroupAndLayerName, "", "");
+    WSM.APISetRevitFamilyInformation(cameraContainerGroupRefHistoryID, false, false, "", ManageCameras.camerasContainerGroupInstanceName, "", "");
 
     // keep track of how many cameras were created
     var camerasCreatedCount = 0;
@@ -172,7 +174,7 @@ ManageCameras.createCameraObjectFromSceneData = function(cameraContainerGroupHis
     var cameraGroupHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(cameraContainerGroupHistoryID, cameraGroupInstanceID);
     
     // set the name of the camera group
-    WSM.APISetRevitFamilyInformation(cameraGroupHistoryID, false, false, "", "Camera", "", "");
+    WSM.APISetRevitFamilyInformation(cameraGroupHistoryID, false, false, "", ManageCameras.cameraObjectGroupName, "", "");
     // set the name of the camera group instance
     WSM.APISetObjectProperties(cameraContainerGroupHistoryID, cameraGroupInstanceID, sceneData.name, false);
 
@@ -181,7 +183,7 @@ ManageCameras.createCameraObjectFromSceneData = function(cameraContainerGroupHis
     var bAnimationLoop = FormIt.Scenes.GetAnimationLoop(animationName);
     var sceneAndAnimationData = { 'SceneData' : sceneData, 'AnimationName' :  animationName, 'AnimationLoop' : bAnimationLoop };
     WSM.Utils.SetOrCreateStringAttributeForObject(cameraContainerGroupHistoryID,
-        cameraGroupInstanceID, ManageCameras.cameraStringAttributeKey, JSON.stringify(sceneAndAnimationData));
+        cameraGroupInstanceID, ManageCameras.cameraObjectSceneDataAttributeKey, JSON.stringify(sceneAndAnimationData));
 }
 
 // creates camera geometry from the given camera data, and returns the instance ID of the generated camera
@@ -430,7 +432,7 @@ ManageCameras.createCameraGeometryFromCameraData = function(nHistoryID, cameraDa
 ManageCameras.updateScenesFromCameras = function(args)
 {
     // first, check if the Cameras Group exists
-    var cameraContainerGroupID = (FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey))[0];
+    var cameraContainerGroupID = (FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.camerasContainerContextHistoryID, ManageCameras.camerasContainerStringAttributeKey))[0];
 
     // if specified, use the clipboard data to find the new cameras
     if (args.useClipboard)
@@ -450,7 +452,7 @@ ManageCameras.updateScenesFromCameras = function(args)
         var isPastedGeometryFromManageCameras;
         if (pastedGeometryIDs.length > 0)
         {
-            var stringAttributeResult = WSM.Utils.GetStringAttributeForObject(ManageCameras.cameraContainerGroupHistoryID, pastedGeometryIDs[0]["ids"][0]["Object"], ManageCameras.cameraStringAttributeKey);
+            var stringAttributeResult = WSM.Utils.GetStringAttributeForObject(ManageCameras.camerasContainerContextHistoryID, pastedGeometryIDs[0]["ids"][0]["Object"], ManageCameras.camerasContainerStringAttributeKey);
             if (pastedGeometryIDs.length === 1 && stringAttributeResult.success)
             {
                 isPastedGeometryFromManageCameras = true;
@@ -470,11 +472,11 @@ ManageCameras.updateScenesFromCameras = function(args)
             // delete the existing cameras Group if it exists - it'll be replaced by the clipboard contents
             if (!isNaN(cameraContainerGroupID))
             {
-                WSM.APIDeleteObject(ManageCameras.cameraContainerGroupHistoryID, cameraContainerGroupID);
+                WSM.APIDeleteObject(ManageCameras.camerasContainerContextHistoryID, cameraContainerGroupID);
             }
 
             // redefine the camera container group as what was just pasted
-            cameraContainerGroupID = (FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.cameraContainerGroupHistoryID, ManageCameras.cameraStringAttributeKey))[0];
+            cameraContainerGroupID = (FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.camerasContainerContextHistoryID, ManageCameras.camerasContainerStringAttributeKey))[0];
 
             FormIt.Selection.ClearSelections();
         }
@@ -487,7 +489,7 @@ ManageCameras.updateScenesFromCameras = function(args)
     }
 
     // get the history for the cameras
-    var cameraContainerGroupRefHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(ManageCameras.cameraContainerGroupHistoryID, cameraContainerGroupID);
+    var cameraContainerGroupRefHistoryID = WSM.APIGetGroupReferencedHistoryReadOnly(ManageCameras.camerasContainerContextHistoryID, cameraContainerGroupID);
     // get a list of instances inside the camera container
     var cameraObjectIDs = WSM.APIGetAllObjectsByTypeReadOnly(cameraContainerGroupRefHistoryID, WSM.nObjectType.nInstanceType);
 
@@ -507,7 +509,7 @@ ManageCameras.updateScenesFromCameras = function(args)
             for (var j = 0; j < cameraObjectIDs.length; j++)
             {
                 // check if this camera object has a string attribute
-                var stringAttributeResult = WSM.Utils.GetStringAttributeForObject(cameraContainerGroupRefHistoryID, cameraObjectIDs[j], ManageCameras.cameraStringAttributeKey);
+                var stringAttributeResult = WSM.Utils.GetStringAttributeForObject(cameraContainerGroupRefHistoryID, cameraObjectIDs[j], ManageCameras.cameraObjectSceneDataAttributeKey);
                 if (stringAttributeResult.success)
                 {
                     // check if this camera object's Scene Data name matches the scene name
@@ -537,7 +539,7 @@ ManageCameras.updateScenesFromCameras = function(args)
         // so for each remaining camera, create a new scene
         for (var i = 0; i < cameraObjectIDs.length; i++)
         {
-            var stringAttributeResult = WSM.Utils.GetStringAttributeForObject(cameraContainerGroupRefHistoryID, cameraObjectIDs[i], ManageCameras.cameraStringAttributeKey);
+            var stringAttributeResult = WSM.Utils.GetStringAttributeForObject(cameraContainerGroupRefHistoryID, cameraObjectIDs[i], ManageCameras.cameraObjectSceneDataAttributeKey);
             FormIt.Scenes.AddScene(JSON.parse(stringAttributeResult.value).SceneData);
             // add the scene to an animation if necessary
             ManageCameras.addSceneToAnimation(stringAttributeResult);
@@ -642,14 +644,41 @@ ManageCameras.getCameraPlaneHistoryID = function(nCameraObjectContainerHistoryID
 
 ManageCameras.getCameraDataFromCameraObjectAttribute = function(nContextHistoryID, nCameraObjectInstanceID)
 {
-    return WSM.Utils.GetStringAttributeForObject(nContextHistoryID, nCameraObjectInstanceID, ManageCameras.cameraStringAttributeKey).value;
+    return WSM.Utils.GetStringAttributeForObject(nContextHistoryID, nCameraObjectInstanceID, ManageCameras.cameraObjectCameraDataAttributeKey).value;
 }
 
 ManageCameras.setCameraDataInCameraObjectAttribute = function(nContextHistoryID, nCameraObjectInstanceID, cameraData)
 {
     // store the camera data on the camera instance
     WSM.Utils.SetOrCreateStringAttributeForObject(nContextHistoryID,
-        nCameraObjectInstanceID, ManageCameras.cameraStringAttributeKey, JSON.stringify(cameraData));
+        nCameraObjectInstanceID, ManageCameras.cameraObjectCameraDataAttributeKey, JSON.stringify(cameraData));
+}
+
+// delete old camera containers and layers from old versions of the plugin
+ManageCameras.deleteLegacyData = function()
+{
+    // try to find and delete the camera container by the legacy string attribute
+    var aLegacyInstanceIDs = FormIt.PluginUtils.Application.getGroupInstancesByStringAttributeKey(ManageCameras.camerasContainerContextHistoryID, ManageCameras.camerasContainerStringAttributeKeyLegacy);
+
+    for (var i = 0; i < aLegacyInstanceIDs.length; i++)
+    {
+        WSM.APIDeleteObject(ManageCameras.camerasContainerContextHistoryID, aLegacyInstanceIDs[i]);
+    }
+
+    /* use this if the layer name changes in the future
+    // then find and delete the legacy layer name if it exists
+    var nLayerID = FormIt.Layers.GetLayerID(ManageCameras.cameraContainerLayerNameLegacy);
+    if (nLayerID != WSM.INVALID_ID)
+    {
+        // if we get here, the layer exists - now check if it has any objects on it
+        var aObjectsOnLayers = FormIt.Layers.GetAllObjectsOnLayers(nLayerID);
+        // only delete the layer if nothing is on it
+        if (aObjectsOnLayers.length == 0)
+        {
+            FormIt.Layers.DeleteLayers(nLayerID);
+        }
+    }
+    */
 }
 
 // this is called by the submit function from the panel - all steps to execute the generation of camera geometry
@@ -679,7 +708,7 @@ ManageCameras.executeGenerateCameraGeometry = function(bCopyToClipboard)
     FormIt.UndoManagement.BeginState();
 
     // create the camera geometry for all scenes
-    ManageCameras.createCameraGeometryForScenes(ManageCameras.cameraContainerGroupHistoryID, allScenes, currentAspectRatio, bCopyToClipboard);
+    ManageCameras.createCameraGeometryForScenes(ManageCameras.camerasContainerContextHistoryID, allScenes, currentAspectRatio, bCopyToClipboard);
 
     // end the undo manager state
     FormIt.UndoManagement.EndState("Export Scenes to Cameras");

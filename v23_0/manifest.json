@@ -1,6 +1,6 @@
 {
     "PluginName": "Manage Cameras",
-    "PluginDescription": "Provides a variety of operations related to Cameras, including modifying the current Camera and generating Cameras from Scenes.",
+    "PluginDescription": "Provides a variety of operations related to cameras, including camera undo/redo, the ability to modify the current camera height, and utilities to transfer Scenes to other FormIt sketches via camera objects.",
     "PluginType": "Panel",
     "Scripts": [
         "https://formit3d.github.io/SharedPluginUtilities/FormItPluginUtils.js",

@@ -32,6 +32,7 @@ ManageCameras.setCameraHeightAboveLevelFromInput = function()
     });
      
     ManageCameras.updateUI();
+    ManageCameras.updateUndoRedoStackAndButtonStates();
 }
 
 // update the FormIt camera height from the "above ground" input
@@ -48,6 +49,7 @@ ManageCameras.setCameraHeightAboveGroundFromInput = function()
     });
      
     ManageCameras.updateUI();
+    ManageCameras.updateUndoRedoStackAndButtonStates();
 }
 
 // initialize the UI

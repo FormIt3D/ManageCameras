@@ -6,6 +6,15 @@ if (typeof ManageCameras == 'undefined')
 /*** application code - runs asynchronously from plugin process to communicate with FormIt ***/
 /*** the FormIt application-side JS engine only supports ES5 syntax, so use var here ***/
 
+// all the current camera data
+ManageCameras.currentCameraDataObject =  { };
+
+// the undo/redo stack for the camera
+ManageCameras.undoRedoStack = [];
+// number of undo states to keep track of
+ManageCameras.undoRedoStackMaxStateCount = 10;
+ManageCameras.currentUndoRedoStackIndex = 0;
+
 // the container Group for cameras will be created in the Main History (0)
 ManageCameras.camerasContainerContextHistoryID = 0;
 
@@ -23,6 +32,58 @@ ManageCameras.camerasContainerStringAttributeKeyLegacy = "FormIt::Plugins::Manag
 
 // the default camera plane distance - from camera position point to plane (in feet)
 ManageCameras.defaultCameraPlaneDistance = 5;
+
+ManageCameras.getUndoRedoAvailabilityInfo = function()
+{
+    // set flags for whether undo and redo are available
+    var bIsUndoAvailable = ManageCameras.currentUndoRedoStackIndex > 0;
+    var bIsRedoAvailable = ManageCameras.currentUndoRedoStackIndex < ManageCameras.undoRedoStack.length - 1;
+
+    console.log("Current index: " + ManageCameras.currentUndoRedoStackIndex);
+
+    // return some data about the undo/redo stack and the current position
+    // so the UI buttons can be updated
+    return { "bIsUndoAvailable" : bIsUndoAvailable, "bIsRedoAvailable" : bIsRedoAvailable };
+}
+
+// add the current camera data to the undo/redo stack
+ManageCameras.updateUndoRedoStack = function()
+{
+    ManageCameras.undoRedoStack.push(ManageCameras.currentCameraDataObject.currentCameraData);
+    // when the undo/redo stack is updated,
+    // force the index to the end of the list
+    ManageCameras.currentUndoRedoStackIndex = ManageCameras.undoRedoStack.length - 1;
+
+    //console.log("Undo/redo stack size: " + ManageCameras.undoRedoStack.length + " and index: " + ManageCameras.currentUndoRedoStackIndex);
+
+    // only ever store the max amount of allowable states
+    if(ManageCameras.undoRedoStack.length > ManageCameras.undoRedoStackMaxStateCount)
+    {
+        ManageCameras.undoRedoStack.shift();
+    }
+}
+
+// go to the previous camera state (undo)
+ManageCameras.goToPreviousUndoRedoState = function()
+{
+    // the new index is either the previous one or the first if we're at the max
+    var newIndex = ManageCameras.currentUndoRedoStackIndex > 0 ? ManageCameras.currentUndoRedoStackIndex - 1 : 0;
+    ManageCameras.currentUndoRedoStackIndex = newIndex;
+
+    FormIt.Cameras.SetCameraData(ManageCameras.undoRedoStack[newIndex]);
+    ManageCameras.bButtonInvoked = true;
+}
+
+// go to the next camera state if available (redo)
+ManageCameras.goToNextUndoRedoState = function()
+{
+    // the new index is either the next one or the last if we're at the current
+    var newIndex = ManageCameras.currentUndoRedoStackIndex < ManageCameras.undoRedoStack.length - 1 ? ManageCameras.currentUndoRedoStackIndex + 1 : ManageCameras.undoRedoStack.length - 1;
+    ManageCameras.currentUndoRedoStackIndex = newIndex;
+
+    FormIt.Cameras.SetCameraData(ManageCameras.undoRedoStack[newIndex]);
+    ManageCameras.bButtonInvoked = true;
+}
 
 // updates variables about the camera
 ManageCameras.getCurrentCameraData = function()
@@ -61,14 +122,16 @@ ManageCameras.getCurrentCameraData = function()
     }
 
     // return the data we need in a json for the web side to read from
-    return {
-        "currentCameraData" : FormIt.Cameras.GetCameraData(),
+    ManageCameras.currentCameraDataObject = {
+        "currentCameraData" : currentCameraData,
         "cameraHeightAboveGroundStr" : FormIt.StringConversion.LinearValueToString(currentCameraHeightAboveGround),
         "currentLevelsData" : currentLevelsData,
         "closestLevelName" : closestLevelName,
         "closestLevelElevationStr" : FormIt.StringConversion.LinearValueToString(closestLevelElevation),
         "cameraHeightAboveLevelStr" : FormIt.StringConversion.LinearValueToString(currentCameraHeightAboveGround - closestLevelElevation)
     }
+
+    return ManageCameras.currentCameraDataObject;
 }
 
 // updates variables about the camera

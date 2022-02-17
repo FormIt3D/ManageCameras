@@ -1,6 +1,6 @@
 <html>
 <head>
-    <!-- for testing shared files locally, use: ../../FormItExamplePlugins/SharedPluginFiles -->
+    <!-- for testing shared files locally, use: ../../SharedPluginUtilities/ -->
     <title>Match Photo</title>
     <META NAME="Title" CONTENT="Manage Cameras">
     <META NAME="Author" CONTENT="Autodesk FormIt">
@@ -22,6 +22,12 @@
                 ManageCameras.updateUI();
             });
 
+            // subscribe to the message sent when the camera stops moving
+            FormItInterface.SubscribeMessage("FormIt.Message.kCameraOperationEnded", function(msg)
+            {
+                ManageCameras.updateUndoRedoStackAndButtonStates();
+            });
+
             // subscribe to the message sent when Levels are changed
             FormItInterface.SubscribeMessage("FormIt.Message.kLevelManagerChanged", function(msg)
             {
@@ -39,6 +45,7 @@
             // before scripts try to access the window document
             ManageCameras.initializeUI();
             ManageCameras.updateUI();
+            ManageCameras.updateUndoRedoStackAndButtonStates();
 
         }); // DOMContentLoaded
     </script>

@@ -5,6 +5,8 @@ window.ManageCameras = window.ManageCameras || {};
 // inputs whose value will be updated when the camera changes
 ManageCameras.cameraHeightFromLevelInputModule = undefined;
 ManageCameras.cameraHeightFromGroundInputModule = undefined;
+ManageCameras.undoCameraButton = undefined;
+ManageCameras.redoCameraButton = undefined;
 
 // checkbox input IDs
 ManageCameras.copyCamerasToClipboardCheckboxID = 'copyCamerasToClipboardCheckbox';
@@ -48,6 +50,132 @@ ManageCameras.setCameraHeightAboveGroundFromInput = function()
     ManageCameras.updateUI();
 }
 
+// initialize the UI
+ManageCameras.initializeUI = function()
+{
+    // create an overall container for all objects that comprise the "content" of the plugin
+    // everything except the footer
+    let contentContainer = document.createElement('div');
+    contentContainer.id = 'contentContainer';
+    contentContainer.className = 'contentContainer'
+    window.document.body.appendChild(contentContainer);
+
+    // create the overall header
+    let headerContainer = new FormIt.PluginUI.HeaderModule('Manage Cameras', 'Manage camera objects, including the current camera and cameras from Scenes.', 'headerContainer');
+    contentContainer.appendChild(headerContainer.element);
+
+    // separator and space
+    contentContainer.appendChild(document.createElement('hr'));
+    contentContainer.appendChild(document.createElement('p'));
+
+    //
+    // camera undo/redo container
+    //
+
+    let cameraUndoRedoSubheader = new FormIt.PluginUI.HeaderModule('Camera Undo/Redo', '', 'headerContainer');
+    contentContainer.appendChild(cameraUndoRedoSubheader.element);
+
+    let cameraUndoRedoButtonContainer = document.createElement('div');
+    cameraUndoRedoButtonContainer.className = 'multiModuleContainer';
+    contentContainer.appendChild(cameraUndoRedoButtonContainer);
+
+    // undo button
+    ManageCameras.undoCameraButton = new FormIt.PluginUI.Button('Undo Camera', function()
+    {
+        window.FormItInterface.CallMethod("ManageCameras.goToPreviousUndoRedoState", { });
+        ManageCameras.updateUndoRedoButtonStates();
+    });
+    cameraUndoRedoButtonContainer.appendChild(ManageCameras.undoCameraButton.element);
+
+    // redo button
+    ManageCameras.redoCameraButton = new FormIt.PluginUI.Button('Redo Camera', function()
+    {
+        window.FormItInterface.CallMethod("ManageCameras.goToNextUndoRedoState", { });
+        ManageCameras.updateUndoRedoButtonStates();
+    });
+    ManageCameras.redoCameraButton.element.style.marginLeft = 10;
+    cameraUndoRedoButtonContainer.appendChild(ManageCameras.redoCameraButton.element);
+
+    //
+    // create the camera details container
+    //
+
+    let cameraDetailsSubheader = new FormIt.PluginUI.HeaderModule('Current Camera', '', 'headerContainer');
+    contentContainer.appendChild(cameraDetailsSubheader.element);
+
+    ManageCameras.cameraHeightFromLevelInputModule = new FormIt.PluginUI.TextInputModule('Height Above Level ', 'cameraHeightFromLevelModule', 'inputModuleContainer', 'cameraHeightFromNearestLevelInput', ManageCameras.setCameraHeightAboveLevelFromInput);
+    contentContainer.appendChild(ManageCameras.cameraHeightFromLevelInputModule.element);
+
+    ManageCameras.cameraHeightFromGroundInputModule = new FormIt.PluginUI.TextInputModule('Height Above Ground: ', 'cameraHeightFromGroundModule', 'inputModuleContainer', 'cameraHeightFromGroundInput', ManageCameras.setCameraHeightAboveGroundFromInput);
+    contentContainer.appendChild(ManageCameras.cameraHeightFromGroundInputModule.element);
+
+    // separator and space
+    contentContainer.appendChild(document.createElement('p'));
+    contentContainer.appendChild(document.createElement('hr'));
+    contentContainer.appendChild(document.createElement('p'));
+
+    // 
+    // create the generate cameras from scenes section
+    //
+    let generateSceneCamerasSubheader = new FormIt.PluginUI.HeaderModule('Export Scenes', "For each Scene in this project, create a Camera object that stores the Scene's camera and metadata.", 'headerContainer');
+    contentContainer.appendChild(generateSceneCamerasSubheader.element);
+
+    let detailsUL = contentContainer.appendChild(document.createElement('ul'));
+
+    let detailsLI1 = detailsUL.appendChild(document.createElement('li'));
+    detailsLI1.innerHTML = 'Use the "Cameras" Layer to control the visibility of these new Camera objects.';
+    let detailsLI2 = detailsUL.appendChild(document.createElement('li'));
+    detailsLI2.innerHTML = 'Camera geometry can be used to transfer camera data between FormIt projects, or other apps.';
+
+    // copy cameras to clipboard checkbox
+    let copyCamerasToClipboardCheckboxModule = new FormIt.PluginUI.CheckboxModule('Copy Cameras to Clipboard', 'copyCamerasCheckboxModule', 'multiModuleContainer', ManageCameras.copyCamerasToClipboardCheckboxID);
+    contentContainer.appendChild(copyCamerasToClipboardCheckboxModule.element);
+    document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked = true;
+
+    // the generate button
+    let exportScenesToCamerasButton = new FormIt.PluginUI.Button('Export Scenes to Cameras', function()
+    {
+        let args = {
+            "copyToClipboard" : document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked,
+            "useClipboard" : document.getElementById(ManageCameras.useClipboardCamerasCheckboxID).checked
+        }
+
+        window.FormItInterface.CallMethod("ManageCameras.executeGenerateCameraGeometry", args);
+    });
+    contentContainer.appendChild(exportScenesToCamerasButton.element);
+
+    //
+    // create the update scene cameras from geometry section
+    //
+    let updateScenesFromCamerasSubheader = new FormIt.PluginUI.HeaderModule('Import Scenes', 'For each available Camera, update or create the associated Scene in this project.');
+    contentContainer.appendChild(updateScenesFromCamerasSubheader.element);
+
+    // use cameras on clipboard checkbox
+    let useCamerasOnClipboardCheckboxModule = new FormIt.PluginUI.CheckboxModule('Look for Cameras on Clipboard', 'copyCamerasCheckboxModule', 'multiModuleContainer', ManageCameras.useClipboardCamerasCheckboxID);
+    contentContainer.appendChild(useCamerasOnClipboardCheckboxModule.element);
+    document.getElementById(ManageCameras.useClipboardCamerasCheckboxID).checked = true;
+
+    // the update button
+    let importScenesFromCamerasButton = new FormIt.PluginUI.Button('Import Scenes from Cameras', function()
+    {
+        let args = {
+            "copyToClipboard" : document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked,
+            "useClipboard" : document.getElementById(ManageCameras.useClipboardCamerasCheckboxID).checked
+        }
+
+        window.FormItInterface.CallMethod("ManageCameras.executeUpdateScenesFromCameras", args);
+    });
+    contentContainer.appendChild(importScenesFromCamerasButton.element);
+
+    //
+    // create the footer
+    //
+    let footerModule = new FormIt.PluginUI.FooterModule;
+    document.body.appendChild(footerModule.element);
+}
+
+// called every frame to update the realtime camera position
+// above ground or levels
 ManageCameras.updateUI = function()
 {
     window.FormItInterface.CallMethod("ManageCameras.getCurrentCameraData", { }, function(cameraData)
@@ -87,98 +215,44 @@ ManageCameras.updateUI = function()
     });
 }
 
-// initialize the UI
-ManageCameras.initializeUI = function()
+// update the undo stack and the button states
+// called on kCameraChanged but not when buttons are invoked
+ManageCameras.updateUndoRedoStackAndButtonStates = function()
 {
-    // create an overall container for all objects that comprise the "content" of the plugin
-    // everything except the footer
-    let contentContainer = document.createElement('div');
-    contentContainer.id = 'contentContainer';
-    contentContainer.className = 'contentContainer'
-    window.document.body.appendChild(contentContainer);
+    window.FormItInterface.CallMethod("ManageCameras.updateUndoRedoStack", { });
+    ManageCameras.updateUndoRedoButtonStates();
+}
 
-    // create the overall header
-    let headerContainer = new FormIt.PluginUI.HeaderModule('Manage Cameras', 'Manage camera objects, including the current camera and cameras from Scenes.', 'headerContainer');
-    contentContainer.appendChild(headerContainer.element);
-
-    // separator and space
-    contentContainer.appendChild(document.createElement('hr'));
-    contentContainer.appendChild(document.createElement('p'));
-
-    //
-    // create the camera details container
-    //
-
-    let cameraDetailsSubheader = new FormIt.PluginUI.HeaderModule('Main Camera', '', 'headerContainer');
-    contentContainer.appendChild(cameraDetailsSubheader.element);
-
-    ManageCameras.cameraHeightFromLevelInputModule = new FormIt.PluginUI.TextInputModule('Height Above Level ', 'cameraHeightFromLevelModule', 'inputModuleContainer', 'cameraHeightFromNearestLevelInput', ManageCameras.setCameraHeightAboveLevelFromInput);
-    contentContainer.appendChild(ManageCameras.cameraHeightFromLevelInputModule.element);
-
-    ManageCameras.cameraHeightFromGroundInputModule = new FormIt.PluginUI.TextInputModule('Height Above Ground: ', 'cameraHeightFromGroundModule', 'inputModuleContainer', 'cameraHeightFromGroundInput', ManageCameras.setCameraHeightAboveGroundFromInput);
-    contentContainer.appendChild(ManageCameras.cameraHeightFromGroundInputModule.element);
-
-    // separator and space
-    contentContainer.appendChild(document.createElement('p'));
-    contentContainer.appendChild(document.createElement('hr'));
-    contentContainer.appendChild(document.createElement('p'));
-
-    // 
-    // create the generate cameras from scenes section
-    //
-    let generateSceneCamerasSubheader = new FormIt.PluginUI.HeaderModule('Export Scenes to Cameras', "For each Scene in this project, create a Camera object that stores the Scene's camera and metadata.", 'headerContainer');
-    contentContainer.appendChild(generateSceneCamerasSubheader.element);
-
-    let detailsUL = contentContainer.appendChild(document.createElement('ul'));
-
-    let detailsLI1 = detailsUL.appendChild(document.createElement('li'));
-    detailsLI1.innerHTML = 'Use the "Cameras" Layer to control the visibility of these new Camera objects.';
-    let detailsLI2 = detailsUL.appendChild(document.createElement('li'));
-    detailsLI2.innerHTML = 'Camera geometry can be used to transfer camera data between FormIt projects, or other apps.';
-
-    // copy cameras to clipboard checkbox
-    let copyCamerasToClipboardCheckboxModule = new FormIt.PluginUI.CheckboxModule('Copy Cameras to Clipboard', 'copyCamerasCheckboxModule', 'multiModuleContainer', ManageCameras.copyCamerasToClipboardCheckboxID);
-    contentContainer.appendChild(copyCamerasToClipboardCheckboxModule.element);
-    document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked = true;
-
-    // the generate button
-    let exportScenesToCamerasButton = new FormIt.PluginUI.Button('Export Scenes to Cameras', function()
+// update the undo/redo buttons based on the stack and current index
+// called on kCameraChanged and when buttons are invoked
+ManageCameras.updateUndoRedoButtonStates = function()
+{
+    // update the current undo/redo stack
+    window.FormItInterface.CallMethod("ManageCameras.getUndoRedoAvailabilityInfo", { }, function(result)
     {
-        let args = {
-            "copyToClipboard" : document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked,
-            "useClipboard" : document.getElementById(ManageCameras.useClipboardCamerasCheckboxID).checked
+        undoRedoStackInfo = JSON.parse(result);
+
+        console.log("Result? " + JSON.stringify(undoRedoStackInfo));
+
+        // update the buttons based on whether an undo/redo state is available
+        if (undoRedoStackInfo.bIsUndoAvailable)
+        {
+            ManageCameras.undoCameraButton.element.disabled = false;
+        }
+        else
+        {
+            ManageCameras.undoCameraButton.element.disabled = true;
         }
 
-        window.FormItInterface.CallMethod("ManageCameras.executeGenerateCameraGeometry", args);
-    });
-    contentContainer.appendChild(exportScenesToCamerasButton.element);
-
-    //
-    // create the update scene cameras from geometry section
-    //
-    let updateScenesFromCamerasSubheader = new FormIt.PluginUI.HeaderModule('Import Scenes from Cameras', 'For each available Camera, update or create the associated Scene in this project.');
-    contentContainer.appendChild(updateScenesFromCamerasSubheader.element);
-
-    // use cameras on clipboard checkbox
-    let useCamerasOnClipboardCheckboxModule = new FormIt.PluginUI.CheckboxModule('Look for Cameras on Clipboard', 'copyCamerasCheckboxModule', 'multiModuleContainer', ManageCameras.useClipboardCamerasCheckboxID);
-    contentContainer.appendChild(useCamerasOnClipboardCheckboxModule.element);
-    document.getElementById(ManageCameras.useClipboardCamerasCheckboxID).checked = true;
-
-    // the update button
-    let importScenesFromCamerasButton = new FormIt.PluginUI.Button('Import Scenes from Cameras', function()
-    {
-        let args = {
-            "copyToClipboard" : document.getElementById(ManageCameras.copyCamerasToClipboardCheckboxID).checked,
-            "useClipboard" : document.getElementById(ManageCameras.useClipboardCamerasCheckboxID).checked
+        // update the buttons based on whether an undo/redo state is available
+        if (undoRedoStackInfo.bIsRedoAvailable)
+        {
+            ManageCameras.redoCameraButton.element.disabled = false;
+            console.log("Bueno?");
         }
-
-        window.FormItInterface.CallMethod("ManageCameras.executeUpdateScenesFromCameras", args);
+        else
+        {
+            ManageCameras.redoCameraButton.element.disabled = true;
+        }
     });
-    contentContainer.appendChild(importScenesFromCamerasButton.element);
-
-    //
-    // create the footer
-    //
-    let footerModule = new FormIt.PluginUI.FooterModule;
-    document.body.appendChild(footerModule.element);
 }

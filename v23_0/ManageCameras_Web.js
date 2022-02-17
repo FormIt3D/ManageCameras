@@ -251,8 +251,6 @@ ManageCameras.updateUndoRedoButtonStates = function()
     {
         undoRedoStackInfo = JSON.parse(result);
 
-        console.log("Result? " + JSON.stringify(undoRedoStackInfo));
-
         // update the buttons based on whether an undo/redo state is available
         if (undoRedoStackInfo.bIsUndoAvailable)
         {

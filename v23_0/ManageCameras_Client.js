@@ -39,8 +39,6 @@ ManageCameras.getUndoRedoAvailabilityInfo = function()
     var bIsUndoAvailable = ManageCameras.currentUndoRedoStackIndex > 0;
     var bIsRedoAvailable = ManageCameras.currentUndoRedoStackIndex < ManageCameras.undoRedoStack.length - 1;
 
-    console.log("Current index: " + ManageCameras.currentUndoRedoStackIndex);
-
     // return some data about the undo/redo stack and the current position
     // so the UI buttons can be updated
     return { "bIsUndoAvailable" : bIsUndoAvailable, "bIsRedoAvailable" : bIsRedoAvailable };

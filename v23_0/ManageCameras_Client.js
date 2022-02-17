@@ -650,7 +650,7 @@ ManageCameras.updateScenesFromCameras = function(args)
     else
     {
         // no Cameras were found
-        var noCamerasMessage = "No Cameras found in this project, or on the Clipboard.\nRun 'Export Scenes to Cameras' first, then try again.";
+        var noCamerasMessage = "No Cameras found in this sketch, or on the Clipboard.\nRun 'Export Scenes to Cameras' first, then try again.";
         FormIt.UI.ShowNotification(noCamerasMessage, FormIt.NotificationType.Error, 0);
         console.log(noCamerasMessage);
         return;
@@ -759,7 +759,7 @@ ManageCameras.executeGenerateCameraGeometry = function(bCopyToClipboard)
     if (allScenes.length === 0)
     {
         // no Scenes found
-        var noScenesMessage = "No Scenes found in this project.\nCreate one or more Scenes, then try again.";
+        var noScenesMessage = "No Scenes found in this sketch.\nCreate one or more Scenes, then try again.";
         FormIt.UI.ShowNotification(noScenesMessage, FormIt.NotificationType.Error, 0);
         console.log(noScenesMessage);
         return;

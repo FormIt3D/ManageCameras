@@ -226,7 +226,7 @@ ManageCameras.updateUI = function()
             cameraHeightFromLevelInput.value = cameraData.cameraHeightAboveLevelStr;
 
             // update the label to indicate the Level the camera is above
-            ManageCameras.cameraHeightFromLevelInputModule.setLabel("Height above level (" + cameraData.closestLevelName + "):");
+            ManageCameras.cameraHeightFromLevelInputModule.setLabel("Height Above Level (" + cameraData.closestLevelName + "):");
         }
         // otherwise, hide the "camera height above level" module - it doesn't apply
         else

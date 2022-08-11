@@ -47,18 +47,22 @@ ManageCameras.getUndoRedoAvailabilityInfo = function()
 // add the current camera data to the undo/redo stack
 ManageCameras.updateUndoRedoStack = function()
 {
-    ManageCameras.undoRedoStack.push(ManageCameras.currentCameraDataObject.currentCameraData);
-    // when the undo/redo stack is updated,
-    // force the index to the end of the list
-    ManageCameras.currentUndoRedoStackIndex = ManageCameras.undoRedoStack.length - 1;
-
-    //console.log("Undo/redo stack size: " + ManageCameras.undoRedoStack.length + " and index: " + ManageCameras.currentUndoRedoStackIndex);
+    // add the current camera data to the stack
+    // if it isn't identical to the last known state
+    if (ManageCameras.currentCameraDataObject.currentCameraData != ManageCameras.undoRedoStack[ManageCameras.undoRedoStack.length - 1])
+    {
+        ManageCameras.undoRedoStack.push(ManageCameras.currentCameraDataObject.currentCameraData);
+    }
 
     // only ever store the max amount of allowable states
-    if(ManageCameras.undoRedoStack.length > ManageCameras.undoRedoStackMaxStateCount)
+    if(ManageCameras.undoRedoStack.length >= ManageCameras.undoRedoStackMaxStateCount)
     {
         ManageCameras.undoRedoStack.shift();
     }
+
+    // when the undo/redo stack is updated,
+    // force the index to the end of the list because this is now the latest action
+    ManageCameras.currentUndoRedoStackIndex = ManageCameras.undoRedoStack.length - 1;
 }
 
 // go to the previous camera state (undo)
